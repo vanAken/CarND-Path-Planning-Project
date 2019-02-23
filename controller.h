@@ -9,7 +9,7 @@ class Controller {
 private:
     vector<double> next_x, next_y;
 public:
-    Controller(vector<double> car_x, vector<double> car_y, double dt,
+    Controller(vector<double> car_x, vector<double> car_y, double dt, double max_speed,
                vector<double> traj_x, vector<double> traj_y, vector<double> traj_v,
                double pred_time);
     vector<double> next_X();

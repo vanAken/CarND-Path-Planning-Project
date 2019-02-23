@@ -8,12 +8,12 @@
 #include "helpers.h"
 #include "json.hpp"
 #include "spline.h"
-#include "track.h"
-#include "track.cpp"
-#include "trajectory_planner.h"
-#include "trajectory_planner.cpp"
+#include "frenet.h"
+#include "frenet.cpp"
 #include "controller.h"
 #include "controller.cpp"
+#include "trajectory_planner.h"
+#include "trajectory_planner.cpp"
 
 // for convenience
 using nlohmann::json;
@@ -25,11 +25,11 @@ int main() {
   uWS::Hub h;
 
   string map_file_ = "../data/highway_map.csv";
-  Track track(map_file_);
+  Frenet frenet(map_file_);
 
-  double max_speed = 45. / 2.24   ; // turn mph into m/s
-  double max_acc   = 9.5;           // m/s²          
-  h.onMessage([&track, &max_speed, &max_acc]
+  double max_speed = 49.0 / 2.24   ; // turn mph into m/s
+  double max_acc   = 9.0;           // m/s²          
+  h.onMessage([&frenet, &max_speed, &max_acc]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -65,6 +65,7 @@ int main() {
           *   sequentially every .02 seconds
           */
           double dt = 0.02;
+          car_speed = min(max_speed, car_speed);
 
           vector<double> cars_s(0), cars_d(0), cars_vs(0), cars_vd(0);
           for(int i = 0; i < sensor_fusion.size(); i++) {
@@ -73,15 +74,15 @@ int main() {
               double sens_y = sensor_fusion[i][2];
               double sens_vx = sensor_fusion[i][3];
               double sens_vy = sensor_fusion[i][4];
-              vector<double> sens_sdv = track.xyv_to_sdv(sens_x,sens_y,sens_vx,sens_vy);
+              vector<double> sens_sdv = frenet.xyv_to_sdv(sens_x,sens_y,sens_vx,sens_vy);
               cars_s.push_back(sens_sdv[0]);
               cars_d.push_back(sens_sdv[1]);
               cars_vs.push_back(sens_sdv[2]);
               cars_vd.push_back(sens_sdv[3]);
           }
 
-          // cut down the previous_path for prediction
-          while(previous_path_x.size() > 50) {
+          // cut down the previous_path for prediction and the start of the planner
+          while(previous_path_x.size() > 25) {
               previous_path_x.pop_back();
               previous_path_y.pop_back();
           }  
@@ -95,8 +96,9 @@ int main() {
          
           // generate the first two points for v=0.5m/s
           if(previous_path_x.size() < 2) { 
-             previous_path_x = {car_x, car_x + cos(deg2rad(car_yaw))*.01};
-             previous_path_y = {car_y, car_y + sin(deg2rad(car_yaw))*.01};
+             double ini_l = max(.5, car_speed) * dt; // l = v * t or 0.5 for low speed
+             previous_path_x = {car_x, car_x + cos(deg2rad(car_yaw))* ini_l};
+             previous_path_y = {car_y, car_y + sin(deg2rad(car_yaw))* ini_l};
           }  
   
           // get the two last points of the previous path for the planner
@@ -107,11 +109,11 @@ int main() {
           double eop_vx = (eop_x - eop_x_pre) / dt;
           double eop_vy = (eop_y - eop_y_pre) / dt;
           // transform them into frenet CS
-          vector<double> end_path = track.xyv_to_sdv(eop_x, eop_y, eop_vx, eop_vy);
+          vector<double> end_path = frenet.xyv_to_sdv(eop_x, eop_y, eop_vx, eop_vy);
           // initialize the planner
           double time_horizont = 10.;
-          TrajectoryPlanner planner(end_path[0], end_path[1], end_path[2], 0.0,
-                                    pred_cars_s, pred_cars_d, cars_vs, cars_vd,
+          TrajectoryPlanner planner(end_path[0], end_path[1], end_path[2],
+                                    pred_cars_s, pred_cars_d, cars_vs,
                                     max_speed, max_acc, time_horizont);
           planner.calculate(0.01);
           vector<double> next_s = planner.pathS();
@@ -121,16 +123,16 @@ int main() {
           vector<double> next_x(0); 
           vector<double> next_y(0); 
           for (long i = 0; i < next_s.size(); i++) {
-              vector<double> next_xy = track.sd_to_xy(next_s[i], next_d[i]);
+              vector<double> next_xy = frenet.sd_to_xy(next_s[i], next_d[i]);
               next_x.push_back(next_xy[0]);
               next_y.push_back(next_xy[1]);
           }
-          
-          Controller pid(previous_path_x, previous_path_y, dt,
+          // generate dot for the packman
+          Controller dots(previous_path_x, previous_path_y, dt, max_speed,
                          next_x, next_y , next_v, pred_time);
           json msgJson;
-          msgJson["next_x"] = pid.next_X();
-          msgJson["next_y"] = pid.next_Y();                
+          msgJson["next_x"] = dots.next_X();
+          msgJson["next_y"] = dots.next_Y();                
           auto msg = "42[\"control\","+ msgJson.dump()+"]123";
           ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
         }  // end "telemetry" if
