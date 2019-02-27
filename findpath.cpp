@@ -46,12 +46,16 @@ int GetMap( int d, int s, int t )
 class MapSearchNode
 {
 public:
-	int d;	 // the (d,s,t) positions of the node
+	int d;	 // the (d,s,t,v) state of the node
 	int s;	
         int t;
+        int v;   // stat variable form speed
+
+        int v_max = +5;
+        int v_min = -5;
 	
-	MapSearchNode() { d = s = t = 0; }
-	MapSearchNode( int pd, int ps, int pt ) { d=pd; s=ps; t=pt; }
+	MapSearchNode() { d = s = t = v = 0; }
+	MapSearchNode( int pd, int ps, int pt , int pv ) { d=pd; s=ps; t=pt; v=pv; }
 
 	float GoalDistanceEstimate( MapSearchNode &nodeGoal );
 	bool IsGoal( MapSearchNode &nodeGoal );
@@ -64,25 +68,19 @@ public:
 
 bool MapSearchNode::IsSameState( MapSearchNode &rhs )
 {
-
-	// same state in a maze search is simply when (d,s,t) are the same
+	// same state in a maze search is simply when (d,s,t,v) are the same
 	if( (d == rhs.d) &&
-		(s == rhs.s)&&
-  		     (t == rhs.t) )
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-
+            (s == rhs.s) &&
+            //(v == rhs.v) &&
+  	    (t == rhs.t) )
+	        return true;
+	else    return false;
 }
 
 void MapSearchNode::PrintNodeInfo()
 {
 	char str[100];
-	sprintf( str, "Node position : (%d,%d,%d)\n", d,s,t );
+	sprintf( str, "Node position : (%d,%d,%d,%d)\n", d,s,t,v );
 	cout << str;
 }
 
@@ -91,7 +89,7 @@ void MapSearchNode::PrintNodeInfo()
 
 float MapSearchNode::GoalDistanceEstimate( MapSearchNode &nodeGoal )
 {
-	return abs(d - nodeGoal.d) + abs(s - nodeGoal.s) + abs(t - nodeGoal.t);
+	return abs(d - nodeGoal.d) + abs(s - nodeGoal.s) + abs(t - nodeGoal.t); // t is importand!!!
 }
 
 bool MapSearchNode::IsGoal( MapSearchNode &nodeGoal )
@@ -111,60 +109,107 @@ bool MapSearchNode::IsGoal( MapSearchNode &nodeGoal )
 // is specific to the application
 bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapSearchNode *parent_node )
 {
-	int parent_d = -1; 
-	int parent_s = -1; 
-	int parent_t = -1; 
-
-	if( parent_node )
-	{
-		parent_d = parent_node->d;
-		parent_s = parent_node->s;
-		parent_t = parent_node->t;
-	}
-	
 
 	MapSearchNode NewNode;
 
-	// push each possible move except allowing the search to go backwards
 
-	if (GetMap( d-1, s, t) < 9)
-	{
-		NewNode = MapSearchNode( d-1, s, t+1 );
+	if (-2<=v && v<=2 && GetMap( d, s, t+1) < 9){ // no move with const. v just wait
+		NewNode = MapSearchNode( d, s, t+1, 0 );
 		astarsearch->AddSuccessor( NewNode );
 	}	
 
-	if (GetMap( d+1, s, t) < 9)
-	{
-		NewNode = MapSearchNode( d+1, s, t+1 );
+         // lanechange: left and right           
+        if (GetMap( d+1, s, t+1) < 9){
+            if ( -2<=v && v<=2 ){ 
+		NewNode = MapSearchNode( d+1, s, t+1, 0 );
 		astarsearch->AddSuccessor( NewNode );
+            }
+	}	
+        if (GetMap( d-1, s, t+1) < 9){
+            if ( -2<=v && v<=2 ){ 
+		NewNode = MapSearchNode( d-1, s, t+1, 0 );
+		astarsearch->AddSuccessor( NewNode );
+            }
+	}	
+	
+        // go futher in s
+        if (GetMap( d, s+1, t) < 9){
+	    if ( v<=v_max && -1<=v && v<=3 ){ 
+                NewNode = MapSearchNode( d, s+1, t+1, +1 );
+		astarsearch->AddSuccessor( NewNode );
+            }
+            if (GetMap( d, s+2, t) < 9 ){
+                if( v<=v_max && 0<=v && v<=4){
+		    NewNode = MapSearchNode( d, s+2, t+1, +2 );
+		    astarsearch->AddSuccessor( NewNode );
+                }
+                if (GetMap( d, s+3, t) < 9 &&
+                    GetMap( d, s+4, t) < 9 ){
+	            if ( v<=v_max && 1<=v && v<=5){ 
+                        NewNode = MapSearchNode( d, s+3, t+1, +3 );
+		        astarsearch->AddSuccessor( NewNode );
+                    }
+                    if (GetMap( d, s+4, t) < 9 &&
+                        GetMap( d, s+5, t) < 9 && 
+                        GetMap( d, s+6, t) < 9 ){
+                        if( v<=v_max && 2<=v && v<=6){
+		            NewNode = MapSearchNode( d, s+4, t+1, +4 );
+ 		            astarsearch->AddSuccessor( NewNode );
+                        }
+                        if (GetMap( d, s+5, t) < 9 && 
+                            GetMap( d, s+6, t) < 9 && 
+                            GetMap( d, s+7, t) < 9 && 
+                            GetMap( d, s+8, t) < 9 && 
+                            GetMap( d, s+9, t) < 9){
+                            if( v<=v_max && 3<=v && v<=7){
+		                NewNode = MapSearchNode( d, s+5, t+1, +5 );
+		                astarsearch->AddSuccessor( NewNode );
+                            }
+                        } 
+                    }
+                }
+	    }	
 	}	
 
-	if (GetMap( d, s-1, t) < 9)
-	{
-		NewNode = MapSearchNode( d, s-1, t+1 );
+        // fall back in s
+	if (GetMap( d, s-1, t) < 9){
+	    if ( v_min<=v && -3<v && v<=1 ){ 
+                NewNode = MapSearchNode( d, s-1, t+1, -1 );
 		astarsearch->AddSuccessor( NewNode );
+            }
+            if (GetMap( d, s-2, t) < 9){
+                if( v_min<=v && -4<=v && v<=0){
+		    NewNode = MapSearchNode( d, s-2, t+1, -2 );
+		    astarsearch->AddSuccessor( NewNode );
+                }
+                if (GetMap( d, s-3, t) < 9 &&
+                    GetMap( d, s-4, t) < 9 ){
+	            if ( v_min<=v && -5<=v && v<=-1){ 
+                        NewNode = MapSearchNode( d, s-3, t+1, -3 );
+		        astarsearch->AddSuccessor( NewNode );
+                    }
+                    if (GetMap( d, s-4, t) < 9 &&
+                        GetMap( d, s-5, t) < 9 && 
+                        GetMap( d, s-6, t) < 9 ){
+                        if( v_min<=v && -6<=v && v<=-2){
+		            NewNode = MapSearchNode( d, s-4, t+1, -4 );
+ 		            astarsearch->AddSuccessor( NewNode );
+                        }
+                        if (GetMap( d, s-5, t) < 9 && 
+                            GetMap( d, s-6, t) < 9 && 
+                            GetMap( d, s-7, t) < 9 && 
+                            GetMap( d, s-8, t) < 9 && 
+                            GetMap( d, s-9, t) < 9){
+                            if( v_min<=v && -7<=v && v<=-3){
+		                NewNode = MapSearchNode( d, s-5, t+1, -5 );
+		                astarsearch->AddSuccessor( NewNode );
+                            }
+                        } 
+                    }
+                }
+	    }	
 	}	
-
-
-	if (GetMap( d, s+1, t) < 9)
-	{
-		NewNode = MapSearchNode( d, s+1, t+1 );
-		astarsearch->AddSuccessor( NewNode );
-	}	
-
-	if (GetMap( d, s-2, t) < 9)
-	{
-		NewNode = MapSearchNode( d, s-2, t+1 );
-		astarsearch->AddSuccessor( NewNode );
-	}	
-
-
-	if (GetMap( d, s+2, t) < 9)
-	{
-		NewNode = MapSearchNode( d, s+2, t+1 );
-		astarsearch->AddSuccessor( NewNode );
-	}	
-
+	
 	return true;
 }
 
@@ -174,7 +219,9 @@ bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapS
 
 float MapSearchNode::GetCost( MapSearchNode &successor )
 {
-	return (float) GetMap( d, s, t );
+       float cost = GetMap( d, s, t )  ;
+        
+       return cost;
 
 }
 
