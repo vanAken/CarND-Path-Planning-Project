@@ -208,10 +208,7 @@ bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapS
 
 float MapSearchNode::GetCost( MapSearchNode &successor )
 {
-       float cost = GetMap( d, s, t )  ;
-        
-       return cost;
-
+       return GetMap( d, s, t );
 }
 
 
