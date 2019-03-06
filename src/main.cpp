@@ -67,24 +67,14 @@ int main() {
           *   sequentially every .02 seconds
           */
           double dt = 0.02;
-          //car_speed = min(max_speed, car_speed);
 
-          // generate the first two points for v=0.5m/s
-          if(previous_path_x.size() < 2) { 
-             double ini_l = max(.5, car_speed) * dt; // l = v * t or 0.5 for low speed
-             previous_path_x = {car_x, car_x + cos(deg2rad(car_yaw))* ini_l};
-             previous_path_y = {car_y, car_y + sin(deg2rad(car_yaw))* ini_l};
-          }  
-  
-          // initialize the Planner
+          // Create an instance of Prediction and Initialize it  
           Prediction trajectory (car_s, car_d, car_speed, sensor_fusion);
 
-          // start STL A*
-          trajectory.search();
-
-          vector<double> next_s = trajectory.path_s;
-          vector<double> next_d = trajectory.path_d;
-          vector<double> next_v = trajectory.path_v;          
+          vector<double> next_s = {car_s+4,car_s+8,car_s+16,car_s+32,car_s+64,car_s+128};
+          vector<double> next_d = {      6,      6,       6,       6,       6,        6};
+          vector<double> next_v = {     20,     20,      20,      20,      20,       20};       
+   
           // transform back inte global CS
           vector<double> next_x(0); 
           vector<double> next_y(0); 
@@ -93,6 +83,14 @@ int main() {
               next_x.push_back(next_xy[0]);
               next_y.push_back(next_xy[1]);
           }
+
+          // generate the first two points for v=0.5m/s if previous_path_x is too empty
+          if(previous_path_x.size() < 2) { 
+             double ini_l = max(.5, car_speed) * dt; // l = v * t or 0.5 for low speed
+             previous_path_x = {car_x, car_x + cos(deg2rad(car_yaw))* ini_l};
+             previous_path_y = {car_y, car_y + sin(deg2rad(car_yaw))* ini_l};
+          }  
+
           // generate the dot for the packman give the controller freenet ?
           Controller dots(previous_path_x, previous_path_y, dt, max_speed,
                          next_x, next_y , next_v);
