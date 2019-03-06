@@ -12,8 +12,8 @@
 #include "frenet.cpp"
 #include "controller.h"
 #include "controller.cpp"
-#include "trajectory_planner.h"
-#include "trajectory_planner.cpp"
+#include "prediction.h"
+#include "prediction.cpp"
 
 // for convenience
 using nlohmann::json;
@@ -50,6 +50,8 @@ int main() {
           // Main car's localization Data
           double car_x = j[1]["x"];
           double car_y = j[1]["y"];
+          double car_s = j[1]["s"];
+          double car_d = j[1]["d"];
           double car_yaw = j[1]["yaw"];
           double car_speed = j[1]["speed"];
 
@@ -65,35 +67,8 @@ int main() {
           *   sequentially every .02 seconds
           */
           double dt = 0.02;
-          car_speed = min(max_speed, car_speed);
+          //car_speed = min(max_speed, car_speed);
 
-          vector<double> cars_s(0), cars_d(0), cars_vs(0), cars_vd(0);
-          for(int i = 0; i < sensor_fusion.size(); i++) {
-              double d = sensor_fusion[i][6];
-              double sens_x = sensor_fusion[i][1];
-              double sens_y = sensor_fusion[i][2];
-              double sens_vx = sensor_fusion[i][3];
-              double sens_vy = sensor_fusion[i][4];
-              vector<double> sens_sdv = frenet.xyv_to_sdv(sens_x,sens_y,sens_vx,sens_vy);
-              cars_s.push_back(sens_sdv[0]);
-              cars_d.push_back(sens_sdv[1]);
-              cars_vs.push_back(sens_sdv[2]);
-              cars_vd.push_back(sens_sdv[3]);
-          }
-
-          // cut down the previous_path for prediction and the start of the planner
-          while(previous_path_x.size() > 25) {
-              previous_path_x.pop_back();
-              previous_path_y.pop_back();
-          }  
-          // Predict the position of the other cars at the end of the path TODO Jerky cars
-          double pred_time = previous_path_x.size() * dt;
-          vector<double> pred_cars_s, pred_cars_d;
-          for(int i = 0; i < cars_s.size(); i++) {
-              pred_cars_s.push_back(cars_s[i] + pred_time * cars_vs[i]);
-              pred_cars_d.push_back(cars_d[i] + pred_time * cars_vd[i]);
-          }
-         
           // generate the first two points for v=0.5m/s
           if(previous_path_x.size() < 2) { 
              double ini_l = max(.5, car_speed) * dt; // l = v * t or 0.5 for low speed
@@ -101,24 +76,15 @@ int main() {
              previous_path_y = {car_y, car_y + sin(deg2rad(car_yaw))* ini_l};
           }  
   
-          // get the two last points of the previous path for the planner
-          double eop_x =     previous_path_x[previous_path_x.size()-1];
-          double eop_y =     previous_path_y[previous_path_x.size()-1];
-          double eop_x_pre = previous_path_x[previous_path_x.size()-2];
-          double eop_y_pre = previous_path_y[previous_path_x.size()-2];
-          double eop_vx = (eop_x - eop_x_pre) / dt;
-          double eop_vy = (eop_y - eop_y_pre) / dt;
-          // transform them into frenet CS
-          vector<double> end_path = frenet.xyv_to_sdv(eop_x, eop_y, eop_vx, eop_vy);
-          // initialize the planner
-          double time_horizont = 10.;
-          TrajectoryPlanner planner(end_path[0], end_path[1], end_path[2],
-                                    pred_cars_s, pred_cars_d, cars_vs,
-                                    max_speed, max_acc, time_horizont);
-          planner.calculate(0.01);
-          vector<double> next_s = planner.pathS();
-          vector<double> next_d = planner.pathD();
-          vector<double> next_v = planner.pathV();          
+          // initialize the Planner
+          Prediction trajectory (car_s, car_d, car_speed, sensor_fusion);
+
+          // start STL A*
+          trajectory.search();
+
+          vector<double> next_s = trajectory.path_s;
+          vector<double> next_d = trajectory.path_d;
+          vector<double> next_v = trajectory.path_v;          
           // transform back inte global CS
           vector<double> next_x(0); 
           vector<double> next_y(0); 
@@ -127,9 +93,9 @@ int main() {
               next_x.push_back(next_xy[0]);
               next_y.push_back(next_xy[1]);
           }
-          // generate dot for the packman
+          // generate the dot for the packman give the controller freenet ?
           Controller dots(previous_path_x, previous_path_y, dt, max_speed,
-                         next_x, next_y , next_v, pred_time);
+                         next_x, next_y , next_v);
           json msgJson;
           msgJson["next_x"] = dots.next_X();
           msgJson["next_y"] = dots.next_Y();                
