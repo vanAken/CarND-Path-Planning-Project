@@ -7,6 +7,8 @@
 
 using namespace std;
 
+//class MapSearchNode; // forward deklaration
+
 class Prediction {
 
 private:

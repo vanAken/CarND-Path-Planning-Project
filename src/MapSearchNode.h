@@ -6,6 +6,9 @@
 #include <stdio.h>
 #include <math.h>
 
+Prediction* pre;// = &trajectory ; // pre->GetMap mit instance trajectory in main.cpp bekannt machen forward declaration???
+       
+
 class MapSearchNode
 {
 public:
@@ -14,9 +17,8 @@ public:
         int t;
         int v;   // stat variable form speed
    
-        //vector<int> time_road; // 2D(t) = 3D Data, but stored as 1D 	
-        //int num_of_lanes, d_horizont_s, d_horizont_t // dimentions of timeroad
-        int v_max, v_min;
+        int v_max =+2;
+        int v_min =-2;
 
 	MapSearchNode() { d = s = t = v = 0; }
 	MapSearchNode( int pd, int ps, int pt , int pv ) { d=pd; s=ps; t=pt; v=pv; }
@@ -69,7 +71,7 @@ float MapSearchNode::GoalDistanceEstimate( MapSearchNode &nodeGoal )
 
 bool MapSearchNode::IsGoal( MapSearchNode &nodeGoal )
 {
-	if( (d == nodeGoal.d) && 
+	if( (d == nodeGoal.d) && // only S
             (s == nodeGoal.s) ){
 	    return true;
 	}
@@ -83,50 +85,51 @@ bool MapSearchNode::IsGoal( MapSearchNode &nodeGoal )
 bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapSearchNode *parent_node )
 {
 
+
 	MapSearchNode NewNode;
 
         
 	if (-2<=v && v<=2){ // traverse move possible only with v=0
-            if (Prediction.GetMap( d, s, t+1) < 9){    // no move with const. v just wait
+            if (pre->GetMap( d, s, t+1) < 9){    // no move with const. v just wait
 		NewNode = MapSearchNode( d, s, t+1, 0 );
 		astarsearch->AddSuccessor( NewNode );
 	    }	            
-            if (Prediction.GetMap( d+1, s, t+1) < 9){  // lanechange: left and right           
+            if (pre->GetMap( d+1, s, t+1) < 9){  // lanechange: left and right           
 		NewNode = MapSearchNode( d+1, s, t+1, 0 );
 		astarsearch->AddSuccessor( NewNode );
             }
-            if (Prediction::GetMap( d-1, s, t+1) < 9){            
+            if (pre->GetMap( d-1, s, t+1) < 9){            
 		NewNode = MapSearchNode( d-1, s, t+1, 0 );
 		astarsearch->AddSuccessor( NewNode );
             }
 	}	
 	
         // go futher in s
-        if (Prediction::GetMap( d, s+1, t) < 9){
+        if (pre->GetMap( d, s+1, t) < 9){
 	    if ( v<=v_max && -1<=v && v<=3 ){ 
                 NewNode = MapSearchNode( d, s+1, t+1, +1 );
 		astarsearch->AddSuccessor( NewNode );
             }
-            if (Prediction::GetMap( d, s+2, t) < 9 ){
+            if (pre->GetMap( d, s+2, t) < 9 ){
                 if( v<=v_max && 0<=v && v<=4){
 		    NewNode = MapSearchNode( d, s+2, t+1, +2 );
 		    astarsearch->AddSuccessor( NewNode );
                 }
-                if (Prediction::GetMap( d, s+3, t) < 9 &&
-                    Prediction::GetMap( d, s+4, t) < 9 ){
+                if (pre->GetMap( d, s+3, t) < 9 &&
+                    pre->GetMap( d, s+4, t) < 9 ){
 	            if ( v<=v_max && 1<=v && v<=5){ 
                         NewNode = MapSearchNode( d, s+3, t+1, +3 );
 		        astarsearch->AddSuccessor( NewNode );
                     }
-                    if (Prediction::GetMap( d, s+5, t) < 9 && 
-                        Prediction::GetMap( d, s+6, t) < 9 ){
+                    if (pre->GetMap( d, s+5, t) < 9 && 
+                        pre->GetMap( d, s+6, t) < 9 ){
                         if( v<=v_max && 2<=v && v<=6){
 		            NewNode = MapSearchNode( d, s+4, t+1, +4 );
  		            astarsearch->AddSuccessor( NewNode );
                         }
-                        if (Prediction::GetMap( d, s+7, t) < 9 && 
-                            Prediction::GetMap( d, s+8, t) < 9 && 
-                            Prediction::GetMap( d, s+9, t) < 9){
+                        if (pre->GetMap( d, s+7, t) < 9 && 
+                            pre->GetMap( d, s+8, t) < 9 && 
+                            pre->GetMap( d, s+9, t) < 9){
                             if( v<=v_max && 3<=v && v<=7){
 		                NewNode = MapSearchNode( d, s+5, t+1, +5 );
 		                astarsearch->AddSuccessor( NewNode );
@@ -138,31 +141,31 @@ bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapS
 	}	
 
         // fall back in s
-	if (Prediction::GetMap( d, s-1, t) < 9){
+	if (pre->GetMap( d, s-1, t) < 9){
 	    if ( v_min<=v && -3<v && v<=1 ){ 
                 NewNode = MapSearchNode( d, s-1, t+1, -1 );
 		astarsearch->AddSuccessor( NewNode );
             }
-            if (Prediction::GetMap( d, s-2, t) < 9){
+            if (pre->GetMap( d, s-2, t) < 9){
                 if( v_min<=v && -4<=v && v<=0){
 		    NewNode = MapSearchNode( d, s-2, t+1, -2 );
 		    astarsearch->AddSuccessor( NewNode );
                 }
-                if (Prediction::GetMap( d, s-3, t) < 9 &&
-                    Prediction::GetMap( d, s-4, t) < 9 ){
+                if (pre->GetMap( d, s-3, t) < 9 &&
+                    pre->GetMap( d, s-4, t) < 9 ){
 	            if ( v_min<=v && -5<=v && v<=-1){ 
                         NewNode = MapSearchNode( d, s-3, t+1, -3 );
 		        astarsearch->AddSuccessor( NewNode );
                     }
-                    if (Prediction::GetMap( d, s-5, t) < 9 &&
-                        Prediction::GetMap( d, s-6, t) < 9 ){
+                    if (pre->GetMap( d, s-5, t) < 9 &&
+                        pre->GetMap( d, s-6, t) < 9 ){
                         if( v_min<=v && -6<=v && v<=-2){
 		            NewNode = MapSearchNode( d, s-4, t+1, -4 );
  		            astarsearch->AddSuccessor( NewNode );
                         }
-                        if (Prediction::GetMap( d, s-7, t) < 9 && 
-                            Prediction::GetMap( d, s-8, t) < 9 && 
-                            Prediction::GetMap( d, s-9, t) < 9){
+                        if (pre->GetMap( d, s-7, t) < 9 && 
+                            pre->GetMap( d, s-8, t) < 9 && 
+                            pre->GetMap( d, s-9, t) < 9){
                             if( v_min<=v && -7<=v && v<=-3){
 		                NewNode = MapSearchNode( d, s-5, t+1, -5 );
 		                astarsearch->AddSuccessor( NewNode );
@@ -182,7 +185,6 @@ bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapS
 
 float MapSearchNode::GetCost( MapSearchNode &successor )
 {
-       return Prediction::GetMap( d, s, t );
+       return pre->GetMap( d, s, t );
 }
-
 #endif

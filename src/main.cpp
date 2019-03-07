@@ -27,7 +27,7 @@ int main() {
   string map_file_ = "../data/highway_map.csv";
   Frenet frenet(map_file_);
 
-  double max_speed = 49.0 / 2.24   ; // turn mph into m/s
+  double max_speed = 39.0 / 2.24   ; // turn mph into m/s
   double max_acc   = 9.0;           // m/s²          
   h.onMessage([&frenet, &max_speed, &max_acc]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
@@ -69,7 +69,10 @@ int main() {
           double dt = 0.02;
 
           // Create an instance of Prediction and Initialize it  
-          Prediction trajectory (car_s, car_d, car_speed, sensor_fusion);
+          Prediction trajectory (car_s, car_d, car_speed/2.24, sensor_fusion);
+
+          // start A*  
+          trajectory.search(); 
 
           vector<double> next_s = {car_s+4,car_s+8,car_s+16,car_s+32,car_s+64,car_s+128};
           vector<double> next_d = {      6,      6,       6,       6,       6,        6};

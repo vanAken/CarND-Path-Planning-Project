@@ -1,7 +1,7 @@
 #include <iostream>
 #include <cmath>
 #include "prediction.h"
-//#include "MapSearchNode.h"
+#include "MapSearchNode.h"
 
 // the inilizing of of Perdition discrete the ego and sensorfusion data
 Prediction::Prediction(double ego_s,double ego_d,double ego_v,vector<vector<double>> sensor_fusion)
@@ -22,11 +22,13 @@ Prediction::Prediction(double ego_s,double ego_d,double ego_v,vector<vector<doub
         d_o_d_pos.push_back( discrete2d( sensor_fusion[i][6]+1)); // possiblel left  lanechange
         d_o_d_neg.push_back( discrete2d( sensor_fusion[i][6]-1)); // possiblel right lanechange
         //   v == vs!     v= distance(0,0,vx                 ,vy                 ) 
-        c_other_v.push_back( (distance(0,0,sensor_fusion[i][3],sensor_fusion[i][4])-_ego_v) / discrete); 
+        c_other_v.push_back((distance(0,0,sensor_fusion[i][3],sensor_fusion[i][4])-ego_v)/4); 
     }
 
+
     // discrete 2D(t) road(t) - filled with 1
-    for(int i = 0; i < num_of_lanes * d_horizont_s * d_horizont_t; i++) {  
+    int map = num_of_lanes*d_horizont_s;
+    for(int i = 0; i < map * d_horizont_t; i++) {  
        time_road[i]= 1;
     } 
 
@@ -34,9 +36,9 @@ Prediction::Prediction(double ego_s,double ego_d,double ego_v,vector<vector<doub
     for (int t = 0; t < d_horizont_t; t++){
     // Predict the relative position of the other cars, for each time layer of the road
         for(int i = 0; i < sensor_fusion.size(); i++) {
-            int d_pre_o_s = d_other_s[i] + t * c_other_v[i] + discrete/2; // discrete prediction in s
-            if (0 < d_pre_o_s && d_pre_o_s < d_horizont_s){// if d_pre is within the horizont put it on the map
-                int pointer_pre_s = d_pre_o_s * num_of_lanes + t * num_of_lanes * d_horizont_s;
+            int d_pre_o_s = d_other_s[i] + t * c_other_v[i]; // discrete prediction in s + t * v 
+            if (0 < d_pre_o_s && d_pre_o_s < d_horizont_s){  // if d_pre is within the horizont put it on the map
+                int pointer_pre_s = d_pre_o_s * num_of_lanes + t * map;
                 time_road [ d_other_d[i] + pointer_pre_s] = 9;
                 // maybe d_other_d plus or minus 1 is different, so set it again or left - no if
                 time_road [ d_o_d_pos[i] + pointer_pre_s] = 9;
@@ -47,19 +49,37 @@ Prediction::Prediction(double ego_s,double ego_d,double ego_v,vector<vector<doub
         // TODO safety area around cars d_other_s[i]+1 = 5 ... 3     1 and on the right to avoid right passing
         }
     } 
-    time_road [1+3*11] = 8;  
-    for (int s = 0; s < d_horizont_s; s++){
+    for (int i=0 ;i<=20;i++) time_road [1+3*10+i*map] = 0;  
+    for (int s = d_horizont_s; s > 0; s--){
         int s_nol = s*num_of_lanes;
-        cout<< time_road[  s_nol] 
-            << time_road[1+s_nol] 
-            << time_road[2+s_nol] <<endl;
+        cout<< time_road[2+s_nol]        << time_road[1+s_nol]        << time_road[0+s_nol]       << " "<<
+               time_road[2+s_nol+ 1*map] << time_road[1+s_nol+ 1*map] << time_road[0+s_nol+ 1*map]<< " "<<
+               time_road[2+s_nol+ 2*map] << time_road[1+s_nol+ 2*map] << time_road[0+s_nol+ 2*map]<< " "<< 
+               time_road[2+s_nol+ 3*map] << time_road[1+s_nol+ 3*map] << time_road[0+s_nol+ 3*map]<< " "<< 
+               time_road[2+s_nol+ 4*map] << time_road[1+s_nol+ 4*map] << time_road[0+s_nol+ 4*map]<< " "<< 
+               time_road[2+s_nol+ 5*map] << time_road[1+s_nol+ 5*map] << time_road[0+s_nol+ 5*map]<< " "<< 
+               time_road[2+s_nol+ 6*map] << time_road[1+s_nol+ 6*map] << time_road[0+s_nol+ 6*map]<< " "<<
+               time_road[2+s_nol+ 7*map] << time_road[1+s_nol+ 7*map] << time_road[0+s_nol+ 7*map]<< " "<< 
+               time_road[2+s_nol+ 8*map] << time_road[1+s_nol+ 8*map] << time_road[0+s_nol+ 8*map]<< " "<< 
+               time_road[2+s_nol+ 9*map] << time_road[1+s_nol+ 9*map] << time_road[0+s_nol+ 9*map]<< " "<< 
+               time_road[2+s_nol+10*map] << time_road[1+s_nol+10*map] << time_road[0+s_nol+10*map]<< " "<< 
+               time_road[2+s_nol+11*map] << time_road[1+s_nol+11*map] << time_road[0+s_nol+11*map]<< " "<< 
+               time_road[2+s_nol+12*map] << time_road[1+s_nol+12*map] << time_road[0+s_nol+12*map]<< " "<< 
+               time_road[2+s_nol+13*map] << time_road[1+s_nol+13*map] << time_road[0+s_nol+13*map]<< " "<< 
+               time_road[2+s_nol+14*map] << time_road[1+s_nol+14*map] << time_road[0+s_nol+14*map]<< " "<< 
+               time_road[2+s_nol+15*map] << time_road[1+s_nol+15*map] << time_road[0+s_nol+15*map]<< " "<< 
+               time_road[2+s_nol+16*map] << time_road[1+s_nol+16*map] << time_road[0+s_nol+16*map]<< " "<< 
+               time_road[2+s_nol+17*map] << time_road[1+s_nol+17*map] << time_road[0+s_nol+17*map]<< " "<< 
+               time_road[2+s_nol+18*map] << time_road[1+s_nol+18*map] << time_road[0+s_nol+18*map]<< " "<< 
+               time_road[2+s_nol+19*map] << time_road[1+s_nol+19*map] << time_road[0+s_nol+19*map]<< " "<< 
+               time_road[2+s_nol+20*map] << time_road[1+s_nol+20*map] << time_road[0+s_nol+20*map]<<endl;
     } 
-    cout << "============================================================================" << endl;
+    cout << "===================================================================================" << endl;
 }
 
 Prediction::~Prediction(){}
 
-/*/ Function acces to the time_road vector as an 3D space, outside is 9 inside is predicted.
+// Function to get acces to the time_road vector in a 3D space, outside is always 9 - inside is the time_road
 int Prediction::GetMap( int d, int s, int t ) {
     if( d < 0 || d >= Prediction::num_of_lanes || 
         s < 0 || s >= Prediction::d_horizont_s || 
@@ -68,12 +88,12 @@ int Prediction::GetMap( int d, int s, int t ) {
     else return time_road[(d
                          + s * Prediction::num_of_lanes
                          + t * Prediction::num_of_lanes * Prediction::d_horizont_s)];
-}*/
+}
 
 
 void Prediction::search() {
 
-/*    // Create an instance of the search class A*
+    // Create an instance of the search class A*
     AStarSearch<MapSearchNode> astarsearch;
 
   
@@ -87,18 +107,19 @@ void Prediction::search() {
 
         // Define the goal state
         MapSearchNode nodeEnd;
-        //nodeEnd.d = 2;						
+        nodeEnd.d = 2;						
         nodeEnd.s = d_horizont_s-1; 
 	
         // Set Start and goal states
         astarsearch.SetStartAndGoalStates( nodeStart, nodeEnd );
         unsigned int SearchState;
         unsigned int SearchSteps = 0;
-
+  
         do  {
             SearchState = astarsearch.SearchStep();
             SearchSteps++;
-	  		cout << "Steps:" << SearchSteps << "\n";
+            cout << "Volker was here" << endl;   
+	  	/*	cout << "Steps:" << SearchSteps << "\n";
 			int len = 0;
 			cout << "Open:\n";
 			MapSearchNode *p = astarsearch.GetOpenListStart();
@@ -117,7 +138,8 @@ void Prediction::search() {
 				p = astarsearch.GetClosedListNext();
 			}
 			cout << "Closed list has " << len << " nodes\n";  
-		}
+		*/}
+  
             while( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_SEARCHING );
             if   ( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_SUCCEEDED ){
 
@@ -151,13 +173,13 @@ void Prediction::search() {
 		cout << "SearchSteps : " << SearchSteps << "\n";
 		SearchCount ++;
 		astarsearch.EnsureMemoryFreed();
-	} */	
+	} 	
 } 
 
 // 6 Funtion to discrete sdv and bring back sdv "2" continous action space
  
 int Prediction::discrete2s(double s){ // set ego_s-rearview to zero, every discrete meter an area
-    int result = int( (s-_ego_s+rearview-discrete/2)/discrete );
+    int result = int( (s-_ego_s+rearview+discrete/2)/discrete );
     if (result > 1000) result -= 1732; // howerver 6945,554÷4 = 1736,3885  
     if (result <-1000) result += 1732; // but value jumps from 1732-1731 
     return result;
@@ -174,7 +196,7 @@ int Prediction::discrete2d(double d) {
 
 int Prediction::discrete2v(double v) {            // for every 4 m/s one discrete area 
     const int discrete_v = 4;                     // velocity area every 4(m/s) 
-    int result = int((v-_ego_v+2)/discrete_v );   // rounding: 2 = discrete_v/2.
+    int result = int((v-_ego_v)/discrete_v );   //
     return result;
 }
 
