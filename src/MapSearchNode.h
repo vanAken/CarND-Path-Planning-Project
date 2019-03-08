@@ -2,11 +2,12 @@
 #define PATH_PLANNING_MAPSEARCHNODE_H
 
 #include "stlastar.h" // See header for copyright and usage information
+#include "prediction.h"
 #include <iostream>
 #include <stdio.h>
 #include <math.h>
 
-Prediction* pre;// = &trajectory ; // pre->GetMap mit instance trajectory in main.cpp bekannt machen forward declaration???
+
        
 
 class MapSearchNode
@@ -19,8 +20,9 @@ public:
    
         int v_max =+2;
         int v_min =-2;
+	std::shared_ptr<Prediction> pre;// = &trajectory ; // pre->GetMap mit instance trajectory in main.cpp bekannt machen forward declaration???
 
-	MapSearchNode() { d = s = t = v = 0; }
+	MapSearchNode(std::shared_ptr<Prediction> preditcion) : pre(preditcion) { d = s = t = v = 0; }
 	MapSearchNode( int pd, int ps, int pt , int pv ) { d=pd; s=ps; t=pt; v=pv; }
 
 	float GoalDistanceEstimate( MapSearchNode &nodeGoal );
@@ -84,7 +86,7 @@ bool MapSearchNode::IsGoal( MapSearchNode &nodeGoal )
 // is specific to the application
 bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapSearchNode *parent_node )
 {
-
+	if(!pre) return false;
 
 	MapSearchNode NewNode;
 
