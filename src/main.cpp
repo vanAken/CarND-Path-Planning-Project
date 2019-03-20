@@ -1,4 +1,4 @@
-//#include <uWS/uWS.h>
+#include <uWS/uWS.h>
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -10,8 +10,8 @@
 #include "spline.h"
 #include "frenet.h"
 #include "frenet.cpp"
-#include "controller.h"
-#include "controller.cpp"
+#include "trajectory.h"
+#include "trajectory.cpp"
 #include "prediction.h"
 #include "prediction.cpp"
 
@@ -27,9 +27,10 @@ int main() {
   string map_file_ = "../data/highway_map.csv";
   Frenet frenet(map_file_);
 
-  double max_speed = 39.0 / 2.24   ; // turn mph into m/s
-  double max_acc   = 9.0;           // m/s²          
-  h.onMessage([&frenet, &max_speed, &max_acc]
+  double v_max = 49.0 / 2.24   ; // turn mph into m/s
+  double a_max   = 10.0;          // m/s² 
+  double time_counter_s = 999;   // start an update eraly      
+  h.onMessage([&frenet, v_max, a_max, &time_counter_s]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -58,6 +59,10 @@ int main() {
           // Previous path data given to the Planner
           vector<double> previous_path_x = j[1]["previous_path_x"];
           vector<double> previous_path_y = j[1]["previous_path_y"];
+
+          // Previous path's end s and d values 
+          double end_path_s = j[1]["end_path_s"];
+          double end_path_d = j[1]["end_path_d"];
  
           // Sensor Fusion Data, a list of all other cars on the same side of the road.
           vector<vector<double>> sensor_fusion = j[1]["sensor_fusion"];
@@ -66,27 +71,17 @@ int main() {
           * TODO: define a path made up of (x,y) points that the car will visit
           *   sequentially every .02 seconds
           */
-          double dt = 0.02;
-
-          // Create an instance of Prediction and Initialize it  
-          Prediction trajectory (car_s, car_d, car_speed/2.24, sensor_fusion);
-
-          // start A*  
-          trajectory.search(); 
-
-          vector<double> next_s = {car_s+4,car_s+8,car_s+16,car_s+32,car_s+64,car_s+128};
-          vector<double> next_d = {      6,      6,       6,       6,       6,        6};
-          vector<double> next_v = {     20,     20,      20,      20,      20,       20};       
-   
-          // transform back inte global CS
-          vector<double> next_x(0); 
-          vector<double> next_y(0); 
-          for (long i = 0; i < next_s.size(); i++) {
-              vector<double> next_xy = frenet.sd_to_xy(next_s[i], next_d[i]);
-              next_x.push_back(next_xy[0]);
-              next_y.push_back(next_xy[1]);
-          }
-
+          const double dt = 0.02;
+          const double d_dt = .2;
+          time_counter_s += dt;
+          if (time_counter_s >= d_dt){  
+              time_counter_s = 0;   // next secound again
+              // Create an instance of Prediction and Initialize it  
+              Prediction path (car_s, d_dt, sensor_fusion);
+              path.search(car_s, car_d,car_speed/2.24, v_max, a_max, d_dt);     // start A*  
+              print_time_raod(); // print discrete solution 
+          } 
+           
           // generate the first two points for v=0.5m/s if previous_path_x is too empty
           if(previous_path_x.size() < 2) { 
              double ini_l = max(.5, car_speed) * dt; // l = v * t or 0.5 for low speed
@@ -94,9 +89,10 @@ int main() {
              previous_path_y = {car_y, car_y + sin(deg2rad(car_yaw))* ini_l};
           }  
 
-          // generate the dot for the packman give the controller freenet ?
-          Controller dots(previous_path_x, previous_path_y, dt, max_speed,
-                         next_x, next_y , next_v);
+           // generate dot for the packman
+          Trajectory dots(previous_path_x, previous_path_y, car_s, car_d,
+                          dt, v_max, a_max, frenet);
+
           json msgJson;
           msgJson["next_x"] = dots.next_X();
           msgJson["next_y"] = dots.next_Y();                

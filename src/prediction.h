@@ -4,6 +4,9 @@
 #include <unordered_map>
 #include <set>
 #include <queue>
+#include <iostream>
+#include <string>
+#include <fstream>
 
 using namespace std;
 
@@ -11,30 +14,22 @@ using namespace std;
 
 class Prediction {
 
-private:
-    double _ego_s, _ego_d, _ego_v;
-    const int discrete =  4;
-    const int rearview = 40;
-    int d_ego_s, d_ego_d, d_ego_v;
-    int time_road[5400]; //num_of_lanes * d_horizont_s * d_horizont_t
-    int discrete2s (double s);
-    int discrete2d (double d);
-    int discrete2v (double v);
-    double continuous2s (int s);
-    double continuous2d (int d);
-    double continuous2v (int v);
-
 public:
-    Prediction(double ego_s,double ego_d,double ego_v,vector<vector<double>> sensor_fusion);
+    Prediction(double ego_s, double pre_t, vector<vector<double>> sensor_fusion);
     ~Prediction();
 
-    int GetMap( int d, int s, int t );
-    const int num_of_lanes =  3;
-    const int d_horizont_s =(80+rearview) / discrete;
-    const int d_horizont_t = 60;
-
-    void search ();
+    void search (double ego_s, double ego_d, double ego_v, double v_max, double a_max, double d_dt);
     vector<double> path_s, path_d, path_v;
+
+private:
+    int      discrete2s (double s, double ego_s);
+    double continuous2s (int    s, double ego_s);
+
+    int      discrete2d (double d);
+    double continuous2d (int    d);
+
+    double   discrete2v (double v, double pre_t);
+    double continuous2v (double v, double pre_t);
 };
 
 #endif
