@@ -74,7 +74,7 @@ double MapSearchNode::GoalDistanceEstimate( MapSearchNode &nodeGoal )
 
 bool MapSearchNode::IsGoal( MapSearchNode &nodeGoal )
 {
-	if( ( d == nodeGoal.d) && // only S as goleline?
+	if( //( d == nodeGoal.d) && // only S as goleline?
             ( s >= nodeGoal.s) ){ // s is double
 	    return true;
 	}
@@ -106,10 +106,7 @@ bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapS
             if (s_add - s < 2 ){         // next area
                 NewNode = MapSearchNode( s_add, d, v_add, t+1, 0);
                 astarsearch->AddSuccessor( NewNode );
-                if ( GetMap( d+1, s+0, t  ) < 9
-                  && GetMap( d+1, s+1, t  ) < 9 
-                  && GetMap( d+1, s+2, t  ) < 9 
-                  && GetMap( d+1, s+0, t+1) < 9
+                if ( GetMap( d+1, s+0, t+1) < 9
                   && GetMap( d+1, s+1, t+1) < 9
                   && GetMap( d+1, s+2, t+1) < 9){ // left fields free
                     NewNode = MapSearchNode( s_add, d+1, v_add, t+1, 1); 
@@ -117,12 +114,9 @@ bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapS
                     NewNode = MapSearchNode( s_sub, d+1, v_sub, t+1, 1); 
                     astarsearch->AddSuccessor( NewNode );
                 }
-                if ( GetMap( d-1, s+0, t  ) < 9
-                  && GetMap( d-1, s+1, t  ) < 9 
-                  && GetMap( d-1, s+2, t  ) < 9 
-                  && GetMap( d-1, s+0, t+1) < 9
+                if ( GetMap( d-1, s+0, t+1) < 9
                   && GetMap( d-1, s+1, t+1) < 9
-                  && GetMap( d-1, s+1, t+1) < 9){ // right fields free
+                  && GetMap( d-1, s+2, t+1) < 9){ // right fields free
                     NewNode = MapSearchNode( s_add, d-1, v_add, t+1, 1); 
                     astarsearch->AddSuccessor( NewNode );
                     NewNode = MapSearchNode( s_sub, d-1, v_sub, t+1, 1); 

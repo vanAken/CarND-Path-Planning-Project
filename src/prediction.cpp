@@ -113,7 +113,7 @@ void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, 
                        ::time_road[node->GetNode_d()       // and store Start to the result map
                                  + node->GetNode_s() * ::num_of_lanes
                                  + node->GetNode_t() * ::num_of_lanes * ::d_horizont_s] = 0;                 
-                       if(steps == 5){//% 3 == 0 && 6 <= steps  ){
+                       if(steps == 6){//% 3 == 0 && 6 <= steps  ){
                        //     ::next_s.push_back( continuous2s (node->GetNode_s(), ego_s) );
                        //     ::next_d.push_back( continuous2d (node->GetNode_d()       ) );
                        //     ::next_v.push_back( continuous2v (node->GetNode_v(), d_dt ) );
@@ -137,7 +137,7 @@ void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, 
                 cout << "Search terminated. Did not find goal state\n";
                 cout << "############################################# "<< endl;
 		cout << "############################################# "<< endl;
-                double car_d = 2 ;
+                double car_d = 6 ;
                 double car_v = 15 ;
                 ::next_s = { ego_s+32,ego_s+64,ego_s+96 ,ego_s+128,ego_s+160,ego_s+192,ego_s+224,ego_s+256 };
                 ::next_d = { car_d   ,car_d   ,car_d    ,car_d   ,car_d    ,car_d     ,car_d    ,car_d     };
@@ -154,7 +154,7 @@ void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, 
 	} 	
 } 
 
-// 6 Funtion to discrete sdv and bring back sdv "2" continous action space
+// 6 Funtion to discrete sdv and bring back sdv 2(to) continous action space
  
 int Prediction::discrete2s(double s, double ego_s){ // set ego_s-rearview to zero, every discrete meter an area
     int result = int( (s-ego_s + ::discrete/2 ) / ::discrete )+offset_s;
