@@ -109,17 +109,17 @@ bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapS
                 if ( GetMap( d+1, s+0, t+1) < 9
                   && GetMap( d+1, s+1, t+1) < 9
                   && GetMap( d+1, s+2, t+1) < 9){ // left fields free
-                    NewNode = MapSearchNode( s_add, d+1, v_add, t+1, 1); 
+                    NewNode = MapSearchNode( s_add, d+1, v_add, t+1, 10); 
                     astarsearch->AddSuccessor( NewNode );
-                    NewNode = MapSearchNode( s_sub, d+1, v_sub, t+1, 1); 
+                    NewNode = MapSearchNode( s_sub, d+1, v_sub, t+1, 10); 
                     astarsearch->AddSuccessor( NewNode );
                 }
                 if ( GetMap( d-1, s+0, t+1) < 9
                   && GetMap( d-1, s+1, t+1) < 9
                   && GetMap( d-1, s+2, t+1) < 9){ // right fields free
-                    NewNode = MapSearchNode( s_add, d-1, v_add, t+1, 1); 
+                    NewNode = MapSearchNode( s_add, d-1, v_add, t+1, 10); 
                     astarsearch->AddSuccessor( NewNode );
-                    NewNode = MapSearchNode( s_sub, d-1, v_sub, t+1, 1); 
+                    NewNode = MapSearchNode( s_sub, d-1, v_sub, t+1, 10); 
                     astarsearch->AddSuccessor( NewNode );
                 }
             }

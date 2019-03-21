@@ -54,9 +54,9 @@ Prediction::Prediction(double ego_s, double d_dt, vector<vector<double>> sensor_
             int d_pre_o_s = d_other_s[i] + d_other_v[i] * t; // discrete prediction in s + t * v 
             if (0 < d_pre_o_s && d_pre_o_s < ::d_horizont_s){  // is d_pre is within the horizont? 
                 int pointer_pre_s = d_pre_o_s * ::num_of_lanes + t * ::num_of_lanes * ::d_horizont_s;
-             //   ::time_road [ d_other_d[i] + pointer_pre_s + ::num_of_lanes] = 9;
+                ::time_road [ d_other_d[i] + pointer_pre_s + ::num_of_lanes] = 9;
                 ::time_road [ d_other_d[i] + pointer_pre_s                 ] = 9;
-             //   ::time_road [ d_other_d[i] + pointer_pre_s - ::num_of_lanes] = 9;
+                ::time_road [ d_other_d[i] + pointer_pre_s - ::num_of_lanes] = 9;
                 // maybe d_other_d plus or minus 1 is different, so set it again or left - no if
                 ::time_road [ d_o_d_pos[i] + pointer_pre_s] = 9;
                 ::time_road [ d_o_d_neg[i] + pointer_pre_s] = 9;
@@ -137,8 +137,8 @@ void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, 
                 cout << "Search terminated. Did not find goal state\n";
                 cout << "############################################# "<< endl;
 		cout << "############################################# "<< endl;
-                double car_d = 6 ;
-                double car_v = 15 ;
+                double car_d = ::next_d [2] ;
+                double car_v = 18 ;
                 ::next_s = { ego_s+32,ego_s+64,ego_s+96 ,ego_s+128,ego_s+160,ego_s+192,ego_s+224,ego_s+256 };
                 ::next_d = { car_d   ,car_d   ,car_d    ,car_d   ,car_d    ,car_d     ,car_d    ,car_d     };
                 ::next_v = { car_v   ,car_v   ,car_v    ,car_v   ,car_v    ,car_v     ,car_v    ,car_v     };  
@@ -175,8 +175,8 @@ int Prediction::discrete2d(double d) {
     return result;
 }
 double Prediction::continuous2d(int d) {          // back to continous track d 
-    const int road_offset = 10.;                   // distance to the outside right midlane
-    const int lane_width = 4.;  
+    const double road_offset = 9.8;                   // distance to the outside right midlane
+    const double lane_width = 3.9;  
     return (road_offset - d * lane_width); 
 }
 
