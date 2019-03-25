@@ -28,8 +28,8 @@ private:
     int      discrete2d (double d);
     double continuous2d (int    d);
 
-    double   discrete2v (double v, double pre_t);
-    double continuous2v (double v, double pre_t);
+    int   discrete2v (double v, double pre_t);
+    double continuous2v (double v, double v_max, double pre_t);
 };
 
 #endif

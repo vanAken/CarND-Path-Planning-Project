@@ -27,7 +27,7 @@ int main() {
   string map_file_ = "../data/highway_map.csv";
   Frenet frenet(map_file_);
 
-  double v_max = 49.0 / 2.24   ; // turn mph into m/s
+  double v_max = 47.0 / 2.24   ; // turn mph into m/s
   double a_max   = 10.0;          // m/s² 
   double time_counter_s = 999;   // start an update eraly      
   h.onMessage([&frenet, v_max, a_max, &time_counter_s]
@@ -71,8 +71,8 @@ int main() {
           * TODO: define a path made up of (x,y) points that the car will visit
           *   sequentially every .02 seconds
           */
-          const double dt = 0.02;
-          const double d_dt = .2;
+          const double dt   = 0.02;
+          const double d_dt = 1.9  ;
           time_counter_s += dt;
           if (time_counter_s >= d_dt){  
               time_counter_s = 0;   // next secound again
@@ -89,9 +89,8 @@ int main() {
              previous_path_y = {car_y, car_y + sin(deg2rad(car_yaw))* ini_l};
           }  
 
-           // generate dot for the packman
-          Trajectory dots(previous_path_x, previous_path_y, car_s, car_d,
-                          dt, v_max, a_max, frenet);
+           // generate dots for the packman - can't use car_s and car_d due A* time
+          Trajectory dots(previous_path_x, previous_path_y, dt, v_max, a_max, frenet);
 
           json msgJson;
           msgJson["next_x"] = dots.next_X();
