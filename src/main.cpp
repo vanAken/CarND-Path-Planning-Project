@@ -27,10 +27,12 @@ int main() {
   string map_file_ = "../data/highway_map.csv";
   Frenet frenet(map_file_);
 
-  double v_max = 47.0 / 2.24   ; // turn mph into m/s
+  double v_max = 49.0 / 2.24   ; // turn mph into m/s
   double a_max   = 10.0;          // m/s² 
-  double time_counter_s = 999;   // start an update eraly      
-  h.onMessage([&frenet, v_max, a_max, &time_counter_s]
+  double time_counter_s = 999;   // start an update eraly    
+  vector<double> next_s, next_d, next_v;  // store A* results          
+
+  h.onMessage([&frenet, v_max, a_max, &time_counter_s, &next_s, &next_d, &next_v]
               (uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length,
                uWS::OpCode opCode) {
     // "42" at the start of the message means there's a websocket message event.
@@ -72,16 +74,20 @@ int main() {
           *   sequentially every .02 seconds
           */
           const double dt   = 0.02;
-          const double d_dt = 1.9  ;
-          time_counter_s += dt;
+          const double d_dt = 2.0 ;
+         
+          time_counter_s += dt;              
           if (time_counter_s >= d_dt){  
-              time_counter_s = 0;   // next secound again
+              time_counter_s = 0;   // next d_dt secound again
               // Create an instance of Prediction and Initialize it  
               Prediction path (car_s, d_dt, sensor_fusion);
-              path.search(car_s, car_d,car_speed/2.24, v_max, a_max, d_dt);     // start A*  
+              path.search(car_s, car_d,car_speed/2.24, v_max, a_max, d_dt);     // start A* 
+              next_s = path.next_S();
+              next_d = path.next_D();
+              next_v = path.next_V();          
               print_time_raod(); // print discrete solution 
           } 
-           
+    
           // generate the first two points for v=0.5m/s if previous_path_x is too empty
           if(previous_path_x.size() < 2) { 
              double ini_l = max(.5, car_speed) * dt; // l = v * t or 0.5 for low speed
@@ -89,8 +95,9 @@ int main() {
              previous_path_y = {car_y, car_y + sin(deg2rad(car_yaw))* ini_l};
           }  
 
-           // generate dots for the packman - can't use car_s and car_d due A* time
-          Trajectory dots(previous_path_x, previous_path_y, dt, v_max, a_max, frenet);
+          // generate dots for the packman - can't use car_s and car_d due A* time
+          Trajectory dots(previous_path_x, previous_path_y, v_max, a_max,
+                        frenet, next_s, next_d, next_v, dt);
 
           json msgJson;
           msgJson["next_x"] = dots.next_X();

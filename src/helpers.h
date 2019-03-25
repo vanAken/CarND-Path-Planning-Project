@@ -42,20 +42,16 @@ double distance(double x1, double y1, double x2, double y2) {
 ///////////////////////////////////////////////////////////////////////////////////
 
 const int discrete =  4; // in s and v direction 4m one area
-const int offset_s = 10; // shift of startposition in s
+const int offset_s =  0; // shift of startposition in s
 
 const int num_of_lanes =  3;
-const long d_horizont_s = 200/discrete + offset_s; // m frontview
+const long d_horizont_s = 240/discrete + offset_s; // m frontview
 const int  d_horizont_t = 60;
 
 int time_road[num_of_lanes * d_horizont_s * d_horizont_t];  //size of 3D time_road = 2D(t) as 1D array
 
 double d_v_max; // discrete velocity
 double d_a_max; // discrete acceleration
-
-vector<double> next_s;
-vector<double> next_d;
-vector<double> next_v;       
 
 // Function to get acces to the time_road in a 3D space, outside is always 9 
 int GetMap( int d, int s, int t ) {
@@ -67,6 +63,10 @@ int GetMap( int d, int s, int t ) {
                          + s * num_of_lanes
                          + t * num_of_lanes * d_horizont_s)];
 }
+
+vector<double> next_s;
+vector<double> next_d;
+vector<double> next_v;       
 
 void print_time_raod(){
     for (int s = ::d_horizont_s-1; s >= 0; --s){  // reverse order
@@ -81,6 +81,8 @@ void print_time_raod(){
                 }
                 else if (time_road[lane+s_nol+ column*map] == 9)
                      std::cout << "\033[36m" << "O" << "\033[0m"; 
+                //else if (time_road[lane+s_nol+ column*map] == 8)
+                  //   std::cout << "\033[36m" << "|" << "\033[0m"; 
                 else std::cout << "\033[30m"<< time_road[lane+s_nol+ column*map]<< "\033[0m"; 
             } 
             std::cout<< " ";     

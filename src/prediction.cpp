@@ -10,12 +10,12 @@ Prediction::Prediction(double ego_s, double d_dt, vector<vector<double>> sensor_
     vector<int> d_other_s, d_other_d, d_o_d_pos, d_o_d_neg;
     vector<double> d_other_v; // continiuos velocity 
     for(int i = 0; i < sensor_fusion.size(); i++) {      
-        d_other_s.push_back( discrete2s( sensor_fusion[i][5], ego_s ));
-        d_other_d.push_back( discrete2d( sensor_fusion[i][6]));
-        d_o_d_pos.push_back( discrete2d( sensor_fusion[i][6]+1)); // possiblel left  lanechange
-        d_o_d_neg.push_back( discrete2d( sensor_fusion[i][6]-1)); // possiblel right lanechange
+        d_other_s.push_back( discrete_to_s( sensor_fusion[i][5], ego_s ));
+        d_other_d.push_back( discrete_to_d( sensor_fusion[i][6]));
+        d_o_d_pos.push_back( discrete_to_d( sensor_fusion[i][6]+1)); // possiblel left  lanechange
+        d_o_d_neg.push_back( discrete_to_d( sensor_fusion[i][6]-1)); // possiblel right lanechange
         //    v == vs!                v= distance(0,0,    vx             ,    vy             ) 
-        d_other_v.push_back( discrete2v( distance(0,0,sensor_fusion[i][3],sensor_fusion[i][4]), d_dt) ); 
+        d_other_v.push_back( discrete_to_v( distance(0,0,sensor_fusion[i][3],sensor_fusion[i][4]), d_dt) ); 
     }
 
     // discrete 2D(t) road(t) - filled with 1
@@ -63,7 +63,7 @@ Prediction::Prediction(double ego_s, double d_dt, vector<vector<double>> sensor_
 Prediction::~Prediction(){}
 
 void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, double a_max, double d_dt) {
-   
+
     // Create an instance of the search class A*
     AStarSearch<MapSearchNode> astarsearch;
 
@@ -73,11 +73,11 @@ void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, 
         // Create a start state
         MapSearchNode nodeStart;
         nodeStart.s = ::offset_s; // start in the midle of the first area
-        nodeStart.d = discrete2d( ego_d);
-        nodeStart.v = discrete2v( ego_v, d_dt);// discrete velocity with repect of d_dt and discrete
+        nodeStart.d = discrete_to_d( ego_d);
+        nodeStart.v = discrete_to_v( ego_v, d_dt);// discrete velocity with repect of d_dt and discrete
 
-        d_v_max = discrete2v( v_max, d_dt );        // convert discrete velocity
-        d_a_max = discrete2v( a_max, d_dt ) * d_dt; // sam as v, but one more d_dt [m/s^2]
+        d_v_max = discrete_to_v( v_max, d_dt );        // convert discrete velocity
+        d_a_max = discrete_to_v( a_max, d_dt ) * d_dt; // sam as v, but one more d_dt [m/s^2]
         
         // Define the goal state
         MapSearchNode nodeEnd;
@@ -88,112 +88,94 @@ void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, 
         astarsearch.SetStartAndGoalStates( nodeStart, nodeEnd );
         unsigned int SearchState;
         unsigned int SearchSteps = 0;
-        int old_next_s_size;
-          do{   SearchState = astarsearch.SearchStep();
-                SearchSteps++;
-            }
-            while( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_SEARCHING );
-            if   ( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_SUCCEEDED ){
+        do{ SearchState = astarsearch.SearchStep();
+            SearchSteps++;
+        }
+        while( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_SEARCHING );
+        if   ( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_SUCCEEDED ){
 
-                cout << "Search found goal state\n";
-                MapSearchNode *node = astarsearch.GetSolutionStart();
-                int steps    = 0;
-                ::time_road[node->GetNode_d()       // and store Start to the result map
-                          + node->GetNode_s() * ::num_of_lanes
-                          + node->GetNode_t() * ::num_of_lanes * ::d_horizont_s] = 0;                 
-                if(next_s[0] == 0){
-                    ::next_s = {ego_s}; // initilizing the spline point queue
-                    ::next_d = {ego_d};  
-                    ::next_v = {ego_v};
-                } 
-                else{
-                    for(int i=next_s.size()-1; 0 <= i ; i--){
-                        if (::next_s[i] < ego_s ||::next_s[i] > 1000){    // old next are not useful any more
-                            ::next_s.erase( next_s.begin()+i );
-                        }
-                    }    
-                    while(::next_s.size() > 2){ // cut down old next
-                        ::next_s.pop_back();
-                        ::next_d.pop_back();
-                        ::next_v.pop_back();
-                    }
-                } 
-                old_next_s_size = ::next_s.size();
-                
-                for(int i =0; i < next_s.size(); i++) {  
-                    cout << "i " << i << " " <<  ::next_s[i]-ego_s << endl;
-                }   
-                cout << "##########old remaining ################################### "<< endl;
-               
-                for(; ; ){ // endless
-                    node = astarsearch.GetSolutionNext();
-                    if( !node ) break;
-
-                       int d_s = node->GetNode_s(); // discrete results of A*
-                       int d_d = node->GetNode_d();
-                       int d_v = node->GetNode_v();
-                       int d_t = node->GetNode_t();
-                       //cout << " d_s: "<< d_s-offset_s << " d_d: "<< d_d << " d_v: "<< d_v << " d_t" << d_t << endl;
-                       ::time_road[ d_d       // and store Start to the result map
-                                  + d_s * ::num_of_lanes
-                                  + d_t * ::num_of_lanes * ::d_horizont_s] = 0;                 
-
-                       double s = continuous2s (node->GetNode_s(), ego_s     ); // continuous results of A*
-                       double d = continuous2d (node->GetNode_d()            );
-                       double v = continuous2v (node->GetNode_v(),v_max, d_dt);
-
-                       if(::next_s[old_next_s_size] + 25 < s ){  // append next_s starting in 25m
-//                       cout << ::next_s[next_s.size()-1]-ego_s << "   s: "<< s-ego_s  << " d: "<< d_d << " v: "<< d_v << endl;
-                     //  ::next_s.push_back( s );
-                     //  ::next_d.push_back( d );
-                     //  ::next_v.push_back( v );
-                       }
-                    steps ++;
+            cout << "Search found goal state\n";
+            MapSearchNode *node = astarsearch.GetSolutionStart();
+            int steps    = 0;
+            ::time_road[node->GetNode_d()       // and store Start to the result map
+                      + node->GetNode_s() * ::num_of_lanes
+                      + node->GetNode_t() * ::num_of_lanes * ::d_horizont_s] = 0;                 
+            for(; ; ){ // endless
+                node = astarsearch.GetSolutionNext();
+                if( !node ) break;
+                int d_s = node->GetNode_s(); // discrete results of A*
+                int d_d = node->GetNode_d();
+                int d_v = node->GetNode_v();
+                int d_t = node->GetNode_t();
+                //cout << " d_s: "<< d_s-offset_s << " d_d: "<< d_d << " d_v: "<< d_v << " d_t" << d_t << endl;
+                ::time_road[ d_d       // and store Start to the result map
+                           + d_s * ::num_of_lanes
+                           + d_t * ::num_of_lanes * ::d_horizont_s] = 0;                 
+                double s = continuous_to_s (node->GetNode_s(), ego_s     ); // continuous results of A*
+                double d = continuous_to_d (node->GetNode_d()            );
+                double v = continuous_to_v (node->GetNode_v(),v_max, d_dt);
+ 
+                if(ego_s + 32 < s ){  // append next_s starting in 1s + 32m or smaller when slow = ego_v + 1.5*ego_v = 2.5*ego_v
+//                    cout << next_s[next_s.size()-1]-ego_s << "   s: "<< s-ego_s  << " d: "<< d_d << " v: "<< d_v << endl;
+                    next_s.push_back( s );
+                    next_d.push_back( d );
+                    next_v.push_back( v );
                 }
-           //     for(int i =0; i < next_s.size(); i++) {  
-            //        cout << "i " << i << " " <<  ::next_s[i]-ego_s << endl;
-            //    }   
-                cout << "Solution steps " << steps << endl;
-                cout << "Solution cost " << astarsearch.GetSolutionCost() << endl;
-                // Once you're done with the solution you can free the nodes up
-                astarsearch.FreeSolutionNodes();	
+                steps ++;
             }
-            else if( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_FAILED ) {
-                cout << "Search terminated. Did not find goal state\n";
-                cout << "############################################# "<< endl;
-		cout << "############################################# "<< endl;
-	    }
-		// Display the number of loops the search went through
-                cout << "SearchSteps : " << SearchSteps << "\n";
-		SearchCount ++;
-		astarsearch.EnsureMemoryFreed();   
-
-                for (int i=1; i<10; i++ ){
-                    ::next_s.push_back( ::next_s[::next_s.size()-1] + i*32 );
-                    if      (i==2)::next_d.push_back( 6  );
-                    else if (i==4)::next_d.push_back( 6 );
-                    else          ::next_d.push_back( 6   ); 
-                    ::next_v.push_back( 22 );
-                }   
-                for(int i =0; i < next_s.size(); i++) {  
-                    cout << "i " << i << " " <<  ::next_s[i]-ego_s <<" ::next_d "<< ::next_d[i] << endl;
-                }   
-             
-	} // end while	
+            //for(int i =0; i < next_s.size(); i++) {  
+              //  cout << "i " << i << " " <<  next_s[i]-ego_s << endl;
+            //}
+            cout << "####### SPIONT LIST 1 ###################################### "<< endl;   
+            cout << "Solution steps " << steps << endl;
+            cout << "Solution cost " << astarsearch.GetSolutionCost() << endl;
+            // Once you're done with the solution you can free the nodes up
+            astarsearch.FreeSolutionNodes();	
+        }
+        else if( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_FAILED ) {
+            cout << "Search terminated. Did not find goal state\n";
+            cout << "############################################# "<< endl;
+	    cout << "############################################# "<< endl;
+          
+            int v = 20;
+	    for (int i=1; i<10; i++ ){
+                next_s.push_back( ego_s + ego_v + i*v*1.5 );
+                if      (i==2)next_d.push_back( 6+4  );
+                else if (i==4)next_d.push_back( 6-1 );
+                else          next_d.push_back( 6   ); 
+                next_v.push_back( 22 );
+            }   
+        }
+        // Display the number of loops the search went through
+        cout << "SearchSteps : " << SearchSteps << "\n";
+	SearchCount ++;
+	astarsearch.EnsureMemoryFreed();               
+    } // end while	
 }
+
+vector<double> Prediction::next_S() {
+    return next_s;
+}
+vector<double> Prediction::next_D() {
+    return next_d;
+}
+vector<double> Prediction::next_V() {
+    return next_v;
+}
+
 // 6 Funtion to discrete sdv and bring back sdv 2(to) continous action space
  
-int Prediction::discrete2s(double s, double ego_s){ // set ego_s-rearview to zero, every discrete meter an area
+int Prediction::discrete_to_s(double s, double ego_s){ // set ego_s-rearview to zero, every discrete meter an area
     int result = int( (s-ego_s + ::discrete/2 ) / ::discrete )+offset_s;
     if (result > 1000) result -= 1732; // howerver 6945,554÷4 = 1736,3885  
     if (result <-1000) result += 1732; // but value jumps from 1732-1731 
     return result;
 }
-double Prediction::continuous2s(int s, double ego_s) {          // back to continous track s
+double Prediction::continuous_to_s(int s, double ego_s) {          // back to continous track s
     return (s-offset_s) * ::discrete  + ego_s;
 }
 
-int Prediction::discrete2d(double d) {  
+int Prediction::discrete_to_d(double d) {  
     const int road_width = 12;          // left lane is 2
     const int lane_width =  4;         // right lane is 0  
     int result = int(( road_width - d) / lane_width );
@@ -201,16 +183,16 @@ int Prediction::discrete2d(double d) {
     result = min(result, ::num_of_lanes-1);       // cut to the right
     return result;
 }
-double Prediction::continuous2d(int d) {          // back to continous track d 
+double Prediction::continuous_to_d(int d) {          // back to continous track d 
     const double road_offset = 9.8;               // distance to the outside right midlane
     const double lane_width  = 3.8;  
     return (road_offset - d * lane_width); 
 }
 
-int Prediction::discrete2v(double v, double d_dt) { // every discrete m/s one area                      
+int Prediction::discrete_to_v(double v, double d_dt) { // every discrete m/s one area                      
     return int( v * d_dt/::discrete) ;    
 }
-double Prediction::continuous2v(double v, double v_max, double d_dt) { // back to continous track v  
+double Prediction::continuous_to_v(double v, double v_max, double d_dt) { // back to continous track v  
     return v * ::discrete/d_dt * v_max/20 ;
 }
 
