@@ -32,14 +32,16 @@ Prediction::Prediction(double ego_s, double d_dt, vector<vector<double>> sensor_
                 int pointer_pre_s = d_pre_o_s * ::num_of_lanes + t * ::num_of_lanes * ::d_horizont_s;
                // Potentialfield around each other car befor car ..
                 if (d_pre_o_s+3 < ::d_horizont_s){ // d_pre +2 also on the map ? inc area infront
-                    ::time_road [ d_other_d[i] + pointer_pre_s + ::num_of_lanes*4] += 1;
-                    ::time_road [ d_other_d[i] + pointer_pre_s + ::num_of_lanes*3] += 2;
-                    ::time_road [ d_other_d[i] + pointer_pre_s + ::num_of_lanes*2]  = 3;
+                    ::time_road [ d_other_d[i] + pointer_pre_s + ::num_of_lanes*5] += 1;
+                    ::time_road [ d_other_d[i] + pointer_pre_s + ::num_of_lanes*4] += 2;
+                    ::time_road [ d_other_d[i] + pointer_pre_s + ::num_of_lanes*3] += 3;
+                    ::time_road [ d_other_d[i] + pointer_pre_s + ::num_of_lanes*2] += 4;
                 }
                 if (0 < d_pre_o_s-3){ // d_pre -3 also on the map ? inc area backwards
-                    ::time_road [ d_other_d[i] + pointer_pre_s - ::num_of_lanes*2]  = 3;
-                    ::time_road [ d_other_d[i] + pointer_pre_s - ::num_of_lanes*3] += 2;
-                    ::time_road [ d_other_d[i] + pointer_pre_s - ::num_of_lanes*4] += 1;
+                    ::time_road [ d_other_d[i] + pointer_pre_s - ::num_of_lanes*2] += 4;
+                    ::time_road [ d_other_d[i] + pointer_pre_s - ::num_of_lanes*3] += 3;
+                    ::time_road [ d_other_d[i] + pointer_pre_s - ::num_of_lanes*4] += 2;
+                    ::time_road [ d_other_d[i] + pointer_pre_s - ::num_of_lanes*5] += 1;
                 }  
                 // if (d_other_d[i]>0) // add cost on the right side if not lane 0 
                 //    ::time_road [ d_other_d[i]-1 + pointer_pre_s] += 1;
@@ -49,9 +51,9 @@ Prediction::Prediction(double ego_s, double d_dt, vector<vector<double>> sensor_
             int d_pre_o_s = d_other_s[i] + d_other_v[i] * t; // discrete prediction in s + t * v 
             if (0 < d_pre_o_s && d_pre_o_s < ::d_horizont_s){  // is d_pre is within the horizont? 
                 int pointer_pre_s = d_pre_o_s * ::num_of_lanes + t * ::num_of_lanes * ::d_horizont_s;
-                ::time_road [ d_other_d[i] + pointer_pre_s + ::num_of_lanes] = 8;
+                ::time_road [ d_other_d[i] + pointer_pre_s + ::num_of_lanes] = 9;
                 ::time_road [ d_other_d[i] + pointer_pre_s                 ] = 9;
-                ::time_road [ d_other_d[i] + pointer_pre_s - ::num_of_lanes] = 8;
+                ::time_road [ d_other_d[i] + pointer_pre_s - ::num_of_lanes] = 9;
                 // maybe d_other_d plus or minus 1 is different, so set it again or left - no if
                 ::time_road [ d_o_d_pos[i] + pointer_pre_s] = 9;
                 ::time_road [ d_o_d_neg[i] + pointer_pre_s] = 9;
@@ -115,34 +117,49 @@ void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, 
                 double d = continuous_to_d (node->GetNode_d()            );
                 double v = continuous_to_v (node->GetNode_v(),v_max, d_dt);
  
-//                    cout << next_s[next_s.size()-1]-ego_s << "   s: "<< s-ego_s  << " d: "<< d_d << " v: "<< d_v << endl;
-                next_s.push_back( s );
-                next_d.push_back( d );
-                next_v.push_back( v );
+                    next_s.push_back( s + ego_v ); // transfer to result
+                    next_d.push_back( d );
+                    next_v.push_back( v );
                 steps ++;
             }
             //for(int i =0; i < next_s.size(); i++) {  
               //  cout << "i " << i << " " <<  next_s[i]-ego_s << endl;
             //}
-            cout << "####### SPIONT LIST 1 ###################################### "<< endl;   
             cout << "Solution steps " << steps << endl;
             cout << "Solution cost " << astarsearch.GetSolutionCost() << endl;
             // Once you're done with the solution you can free the nodes up
             astarsearch.FreeSolutionNodes();	
         }
         else if( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_FAILED ) {
-            cout << "Search terminated. Did not find goal state\n";
-            cout << "############################################# "<< endl;
-	    cout << "############################################# "<< endl;
-          
-            int v = 20;
-	    for (int i=1; i<10; i++ ){
-                next_s.push_back( ego_s + ego_v + i*v*1.5 );
-                if      (i==2)next_d.push_back( 6+4  );
-                else if (i==4)next_d.push_back( 6-1 );
-                else          next_d.push_back( 6   ); 
-                next_v.push_back( 22 );
-            }   
+            cout << "Search terminated. Follower mode " << endl;;
+            int d_next_s1 =0;
+            int d_next_s2 =0; 
+            for (int i=d_horizont_s-1; i>nodeStart.d ; i--){
+                if ( GetMap(nodeStart.d ,i,1) == 9 ){
+                    d_next_s1 = i; 
+                }
+            //cout << i << " " << d_next_s1 << " " <<  GetMap(nodeStart.d ,d_next_s1,1) << endl;
+            }
+            for (int i=d_horizont_s-1; i>d_next_s1 ; i--){
+                if ( GetMap(nodeStart.d ,i,2) == 9 ){
+                    d_next_s2 = i; 
+                }
+            //cout << i << " " << d_next_s2 << " " <<  GetMap(nodeStart.d ,d_next_s2,2) << endl;
+            }
+            double c_next_s1 = continuous_to_s( d_next_s1, ego_s ); // distance to next car in 1s
+            double c_next_s2 = continuous_to_s( d_next_s2, ego_s ); // distance to next car in 2s
+            double c_next_d  = continuous_to_d( discrete_to_d( ego_d));
+            double c_next_v  = c_next_s2-c_next_s1+1; // v = (s2-s1)/t 
+            if (c_next_s2-ego_s < 10){
+                 c_next_v -= 2;      
+            }
+                next_s = { c_next_s2, c_next_s2+32, c_next_s2+64, c_next_s2+96, c_next_s2+128 };
+                next_d = { c_next_d , c_next_d    , c_next_d    , c_next_d    , c_next_d }; 
+                next_v = { c_next_v ,c_next_v     ,c_next_v     ,c_next_v     ,c_next_v  };
+            cout << "c_next_sx " << c_next_s2 << " " <<  c_next_v << endl;
+            for(int i =0; i < next_s.size(); i++) {  
+                cout << "i " << i << " " <<  next_s[i]-ego_s << endl;
+            }
         }
         // Display the number of loops the search went through
         cout << "SearchSteps : " << SearchSteps << "\n";

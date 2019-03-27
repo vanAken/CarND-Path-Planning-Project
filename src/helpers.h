@@ -45,8 +45,8 @@ const int discrete =  4; // in s and v direction 4m one area
 const int offset_s =  0; // shift of startposition in s
 
 const int num_of_lanes =  3;
-const long d_horizont_s = 240/discrete + offset_s; // m frontview
-const int  d_horizont_t = 60;
+const long d_horizont_s = 400/discrete + offset_s; // m frontview
+const int  d_horizont_t = 120;
 
 int time_road[num_of_lanes * d_horizont_s * d_horizont_t];  //size of 3D time_road = 2D(t) as 1D array
 
@@ -80,7 +80,7 @@ void print_time_raod(){
                     if (lane==0)std::cout << "\033[31m\033[1m" << "0" << "\033[0m";
                 }
                 else if (time_road[lane+s_nol+ column*map] == 9)
-                     std::cout << "\033[36m" << "O" << "\033[0m"; 
+                     std::cout << "\033[36m" << "|" << "\033[0m"; 
                 //else if (time_road[lane+s_nol+ column*map] == 8)
                   //   std::cout << "\033[36m" << "|" << "\033[0m"; 
                 else std::cout << "\033[30m"<< time_road[lane+s_nol+ column*map]<< "\033[0m"; 

@@ -81,7 +81,7 @@ int main() {
               time_counter_s = 0;   // next d_dt secound again
               // Create an instance of Prediction and Initialize it  
               Prediction path (car_s, d_dt, sensor_fusion);
-              path.search(car_s, car_d,car_speed/2.24, v_max, a_max, d_dt);     // start A* 
+              path.search(car_s, car_d,car_speed/2.24, v_max, a_max, d_dt);     // start A* maybe thread with boost?
               next_s = path.next_s;
               next_d = path.next_d;
               next_v = path.next_v;          
@@ -95,19 +95,16 @@ int main() {
               if(previous_path_x.size() < 2) { 
                  double ini_l = max(.5, car_speed) * dt; // l = v * t or 0.5 for low speed
                  previous_path_x = {car_x, car_x + cos(deg2rad(car_yaw))* ini_l};
-                 previous_path_y = {car_y, car_y + sin(deg2rad(car_yaw))* ini_l};
-                // next_s = {car_s + 30,car_s + 60};
-                // next_d = {car_d     ,car_d};
-                // next_v = {10        ,20};       
+                 previous_path_y = {car_y, car_y + sin(deg2rad(car_yaw))* ini_l};  
               }  
 
               // generate dots for the packman - can't use car_s and car_d due A* time
-              Trajectory dots(previous_path_x, previous_path_y, v_max, a_max,
+              Trajectory trajectory(previous_path_x, previous_path_y, v_max, a_max,
                               frenet, next_s, next_d, next_v, dt);
 
               json msgJson;
-              msgJson["next_x"] = dots.next_X();
-              msgJson["next_y"] = dots.next_Y();                
+              msgJson["next_x"] = trajectory.next_x;
+              msgJson["next_y"] = trajectory.next_y;                
             
               auto msg = "42[\"control\","+ msgJson.dump()+"]123";
               ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);  
