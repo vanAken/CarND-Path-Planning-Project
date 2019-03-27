@@ -115,12 +115,10 @@ void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, 
                 double d = continuous_to_d (node->GetNode_d()            );
                 double v = continuous_to_v (node->GetNode_v(),v_max, d_dt);
  
-                if(ego_s + 32 < s ){  // append next_s starting in 1s + 32m or smaller when slow = ego_v + 1.5*ego_v = 2.5*ego_v
 //                    cout << next_s[next_s.size()-1]-ego_s << "   s: "<< s-ego_s  << " d: "<< d_d << " v: "<< d_v << endl;
-                    next_s.push_back( s );
-                    next_d.push_back( d );
-                    next_v.push_back( v );
-                }
+                next_s.push_back( s );
+                next_d.push_back( d );
+                next_v.push_back( v );
                 steps ++;
             }
             //for(int i =0; i < next_s.size(); i++) {  
@@ -151,16 +149,6 @@ void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, 
 	SearchCount ++;
 	astarsearch.EnsureMemoryFreed();               
     } // end while	
-}
-
-vector<double> Prediction::next_S() {
-    return next_s;
-}
-vector<double> Prediction::next_D() {
-    return next_d;
-}
-vector<double> Prediction::next_V() {
-    return next_v;
 }
 
 // 6 Funtion to discrete sdv and bring back sdv 2(to) continous action space

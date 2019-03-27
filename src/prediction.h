@@ -20,13 +20,10 @@ public:
 
     void search (double ego_s, double ego_d, double ego_v, double v_max, double a_max, double d_dt);
 
-    vector<double> next_S();
-    vector<double> next_D();
-    vector<double> next_V();
-
-private:
     vector<double> next_s, next_d, next_v;
 
+private:
+    
     int      discrete_to_s (double s, double ego_s);
     double continuous_to_s (int    s, double ego_s);
 
