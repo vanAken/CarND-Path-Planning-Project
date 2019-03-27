@@ -45,8 +45,8 @@ const int discrete =  4; // in s and v direction 4m one area
 const int offset_s =  0; // shift of startposition in s
 
 const int num_of_lanes =  3;
-const long d_horizont_s = 400/discrete + offset_s; // m frontview
-const int  d_horizont_t = 120;
+const long d_horizont_s = 360/discrete + offset_s; // m frontview
+const int  d_horizont_t = 60;
 
 int time_road[num_of_lanes * d_horizont_s * d_horizont_t];  //size of 3D time_road = 2D(t) as 1D array
 

@@ -28,7 +28,7 @@ Trajectory::Trajectory( vector<double> previous_path_x, vector<double> previous_
                     spline_points_x.push_back( next_xy[0] );
                     spline_points_y.push_back( next_xy[1] );
                     spline_points_v.push_back( next_v[i]  );
-                    next_xy = frenet.sd_to_xy( next_s[i]+10, next_d[i]); // double point to avoid overswinging
+                    next_xy = frenet.sd_to_xy( next_s[i]+v_t/3, next_d[i]); // double point to avoid overswinging
                     spline_points_x.push_back( next_xy[0] );
                     spline_points_y.push_back( next_xy[1] );
                     spline_points_v.push_back( next_v[i]  );
@@ -52,7 +52,7 @@ Trajectory::Trajectory( vector<double> previous_path_x, vector<double> previous_
     spline_y.set_points( spline_points_s, spline_points_y );
     spline_v.set_points( spline_points_s, spline_points_v );      
     while( next_x.size() < max_waypoints) {
-        if (v_t <= spline_v(16+dl) ) v_t = min(v_max, v_t + a_max/2 * dt); // +16 for future v
+        if (v_t <= spline_v(32+dl) ) v_t = min(v_max, v_t + a_max/2 * dt); // +16 for future v
         else                         v_t = max( 4.  , v_t - a_max/2 * dt);
         //std::cout << "spline_v(32+dl): " << spline_v(32+dl) << "v_t: " << v_t << std::endl;
         dl += v_t * dt;
