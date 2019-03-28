@@ -120,7 +120,7 @@ void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, 
                    double s = continuous_to_s (node->GetNode_s(), ego_s     ); // continuous results of A*
                    double d = continuous_to_d (node->GetNode_d()            );
                    double v = continuous_to_v (node->GetNode_v(),v_max, d_dt);
-                   next_s.push_back( s + ego_v ); // transfer to result
+                   next_s.push_back( s + 2 * ego_v ); // transfer to result
                    next_d.push_back( d );
                    next_v.push_back( v );
                 }
@@ -138,7 +138,7 @@ void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, 
         else if( SearchState == AStarSearch<MapSearchNode>::SEARCH_STATE_FAILED ) {
             cout << "Search terminated. Follower mode " << endl;;
             double c_next_d  = continuous_to_d( discrete_to_d( ego_d));
-            double c_next_v  = 18.;            
+            double c_next_v  = 15.;            
             next_s = { ego_s+32, ego_s+64, ego_s+96, ego_s+128, ego_s+160 };
             next_d = { c_next_d, c_next_d, c_next_d, c_next_d , c_next_d  }; 
             next_v = { c_next_v, c_next_v, c_next_v, c_next_v , c_next_v  };
@@ -171,8 +171,8 @@ int Prediction::discrete_to_d(double d) {
     return result;
 }
 double Prediction::continuous_to_d(int d) {          // back to continous track d 
-    const double road_offset = 9.8;               // distance to the outside right midlane
-    const double lane_width  = 3.8;  
+    const double road_offset = 9.9;               // distance to the outside right midlane
+    const double lane_width  = 3.9;  
     return (road_offset - d * lane_width); 
 }
 
