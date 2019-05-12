@@ -1,11 +1,6 @@
 #ifndef HELPERS_H
 #define HELPERS_H
 
-#include <math.h>
-#include <string>
-#include <vector>
-
-
 // for convenience
 using std::string;
 using std::vector;
@@ -41,17 +36,13 @@ double distance(double x1, double y1, double x2, double y2) {
 // global variabls
 ///////////////////////////////////////////////////////////////////////////////////
 
-const int discrete =  4; // in s and v direction 4m one area
-const int offset_s =  0; // shift of startposition in s
+const int discrete =  4; // in s and v: 4m one area 4m/s one speed case
 
 const int num_of_lanes =  3;
-const long d_horizont_s = 360/discrete + offset_s; // m frontview
+const long d_horizont_s = 300/discrete ; // m look ahead distance
 const int  d_horizont_t = 60;
 
 int time_road[num_of_lanes * d_horizont_s * d_horizont_t];  //size of 3D time_road = 2D(t) as 1D array
-
-double d_v_max; // discrete velocity
-double d_a_max; // discrete acceleration
 
 // Function to get acces to the time_road in a 3D space, outside is always 9 
 int GetMap( int d, int s, int t ) {
@@ -64,32 +55,61 @@ int GetMap( int d, int s, int t ) {
                          + t * num_of_lanes * d_horizont_s)];
 }
 
-vector<double> next_s;
-vector<double> next_d;
-vector<double> next_v;       
-
 void print_time_raod(){
     for (int s = ::d_horizont_s-1; s >= 0; --s){  // reverse order
         int s_nol = s * ::num_of_lanes;
         int map =  ::num_of_lanes * ::d_horizont_s;
-        for (int column=0; column < 50;column++){   
+        for (int column=0; column < 25;column++){   
             for (int lane=2; 0 <= lane; lane--){
-                if (time_road[lane+s_nol+ column*map] == 0){ 
+                if (time_road[lane+s_nol+ column*map] == 99){ 
                     if (lane==2)std::cout << "\033[35m\033[1m" << "0" << "\033[0m";
                     if (lane==1)std::cout << "\033[33m\033[1m" << "0" << "\033[0m";
                     if (lane==0)std::cout << "\033[31m\033[1m" << "0" << "\033[0m";
                 }
                 else if (time_road[lane+s_nol+ column*map] == 9)
+                     std::cout << "\033[36m" << "O" << "\033[0m"; 
+                else if (time_road[lane+s_nol+ column*map] == 8)
                      std::cout << "\033[36m" << "|" << "\033[0m"; 
-                //else if (time_road[lane+s_nol+ column*map] == 8)
-                  //   std::cout << "\033[36m" << "|" << "\033[0m"; 
                 else std::cout << "\033[30m"<< time_road[lane+s_nol+ column*map]<< "\033[0m"; 
             } 
             std::cout<< " ";     
         }
-    std::cout << s - offset_s <<  std::endl;
+    std::cout << s <<  std::endl;
     } 
     std::cout << "=0===1===2===3===4===5===6===7===8===9==10==11==12==13==15==16==17==18==19==20==21 t(d_dt)" << std::endl;
+}
+
+// 6 Funtion to convert sdv in xyv and visa versa
+ 
+int discrete_to_s(double s, double ego_s){ // ego_s converts to zero
+    int result = int( (s-ego_s + discrete/2 ) / discrete );
+    if (result > 1000) result -= 1732; // howerver 6945,554÷4 = 1736,3885  
+    if (result <-1000) result += 1732; // but value jumps from 1732-1731 
+    return result;                     // results are between 0 and max 1000
+}
+double continuous_to_s(int s, double ego_s) {  // back to continous track s
+    return s * discrete  + ego_s;
+}
+
+int discrete_to_d(double d) {  
+    const int road_width = 12;           // left lane is 2
+    const int lane_width =  4;           // right lane is 0  
+    int result = int(( road_width - d) / lane_width );
+    result = std::max(result, 0);              // cut to the left
+    result = std::min(result, num_of_lanes-1); // cut to the right
+    return result;
+}
+double continuous_to_d(int d) {          // back to continous track d 
+    const double road_offset = 9.8;      // distance to the outside right midlane
+    const double lane_width  = 3.8;  
+    return (road_offset - d * lane_width); 
+}
+
+double discrete_to_v(double v) {         // every discrete m/s one area                      
+    return  v / discrete ;    
+}
+double continuous_to_v(double v, double v_max) { // back to continous track v  
+    return v * discrete * v_max/20 ;
 }
 
 #endif  // HELPERS_H
