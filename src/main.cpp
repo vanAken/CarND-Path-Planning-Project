@@ -17,7 +17,7 @@ int main() {
   string map_file_ = "../data/highway_map.csv";
   Frenet frenet(map_file_);
 
-  double v_max = 48.5 / 2.24   ;          // turn mph into m/s
+  double v_max = 44.5 / 2.24   ;          // turn mph into m/s
   double a_max = 10.0;                    // m/s² 
   double time_counter_s = 999;            // a* conter is hight to start A* first
   vector<double> next_s, next_d, next_v;  // store A* results          

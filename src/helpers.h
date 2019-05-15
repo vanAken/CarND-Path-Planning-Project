@@ -79,7 +79,7 @@ void print_time_raod(){
     std::cout << "=0===1===2===3===4===5===6===7===8===9==10==11==12==13==15==16==17==18==19==20==21 t(d_dt)" << std::endl;
 }
 
-// 6 Funtion to convert sdv in xyv and visa versa
+// 6 Function for converting s, d and v from the continuous action space into discrete values and vice versa
  
 int discrete_to_s(double s, double ego_s){ // ego_s converts to zero
     int result = int( (s-ego_s + discrete/2 ) / discrete );
@@ -87,7 +87,7 @@ int discrete_to_s(double s, double ego_s){ // ego_s converts to zero
     if (result <-1000) result += 1732; // but value jumps from 1732-1731 
     return result;                     // results are between 0 and max 1000
 }
-double continuous_to_s(int s, double ego_s) {  // back to continous track s
+double continuous_to_s(int s, double ego_s) {  // back to continous s
     return s * discrete  + ego_s;
 }
 
@@ -99,16 +99,16 @@ int discrete_to_d(double d) {
     result = std::min(result, num_of_lanes-1); // cut to the right
     return result;
 }
-double continuous_to_d(int d) {          // back to continous track d 
-    const double road_offset = 9.8;      // distance to the outside right midlane
-    const double lane_width  = 3.8;  
+double continuous_to_d(int d) {          // back to continous  d 
+    const double road_offset = 9.99;      // distance to the outside right midlane
+    const double lane_width  = 3.99;  
     return (road_offset - d * lane_width); 
 }
 
-double discrete_to_v(double v) {         // every discrete m/s one area                      
+double discrete_to_v(double v) {         // every discrete*m/s one area                      
     return  v / discrete ;    
 }
-double continuous_to_v(double v, double v_max) { // back to continous track v  
+double continuous_to_v(double v, double v_max) { // back to continous v  
     return v * discrete * v_max/20 ;
 }
 

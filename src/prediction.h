@@ -46,7 +46,7 @@ Prediction::Prediction(double ego_s, double d_dt, vector<vector<double>> sensor_
          previous_sd = frenet.xy_to_sd(previous_path_x[i],previous_path_y[i]);
          int previous_s = ::discrete_to_s( previous_sd[0],ego_s);
          int previous_d = ::discrete_to_d( previous_sd[1]);
-         if (previous_s < ::d_horizont_s){
+         if (previous_s < ::d_horizont_s && previous_d !=0){
              ::time_road[previous_d + 
                          previous_s * ::num_of_lanes + 
                          (i+49)/49  * ::num_of_lanes * ::d_horizont_s]= 0;
@@ -157,7 +157,8 @@ void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, 
             cout << "Search found goal state\n";
             MapSearchNode *node = astarsearch.GetSolutionStart();
             int steps   = 0;
-            int tmp_d_s = 0; 
+            int pre_d_s = 0; 
+            int pre_d_d = 1; 
             ::time_road[node->GetNode_d()       // and store Start in the result map
                       + node->GetNode_s() * ::num_of_lanes
                       + node->GetNode_t() * ::num_of_lanes * ::d_horizont_s] = 99;                 
@@ -171,15 +172,18 @@ void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, 
                 ::time_road[ d_d       // and store next node in the result map
                            + d_s * ::num_of_lanes
                            + d_t * ::num_of_lanes * ::d_horizont_s] = 99;                 
-                if( tmp_d_s < d_s ){   // filter same d_s
-                   double s = continuous_to_s (node->GetNode_s(), ego_s     ); // continuous results of A*
-                   double d = continuous_to_d (node->GetNode_d()            );
-                   double v = continuous_to_v (node->GetNode_v(),v_max);
-                   next_s.push_back( s+v*d_dt ); // transfer to result
-                   next_d.push_back( d );
-                   next_v.push_back( v );
+                if( pre_d_s < d_s ){   // filter same d_s
+                    if ( 2 < (pre_d_d-d_d)*(pre_d_d-d_d) ){
+                        d_d = 1;
+                    }
+                    double s = continuous_to_s (d_s, ego_s ); // continuous results of A*
+                    double d = continuous_to_d (d_d        );
+                    double v = continuous_to_v (d_v, v_max );
+                    next_s.push_back( s ); // transfer to result
+                    next_d.push_back( d );
+                    next_v.push_back( v );
                 }
-                tmp_d_s = d_s;
+                pre_d_s = d_s;
                 steps ++;
             }
             cout << "Solution steps " << steps << endl;
@@ -217,15 +221,13 @@ void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, 
             cout << "Search terminated. Follower mode " << endl;;
             double c_next_d  = ::continuous_to_d( nodeStart.d );
             double c_next_v;
-            if(gap_s  > v_max ){
-    	        //match that cars speed and distance
+            if(gap_s  > v_max ){ //match that cars speed and distance
                 c_next_v = std::min(v_max-1,gap_v+.1);
             }
-            else{
-                // brake
+            else{ // brake
                 c_next_v = gap_v-5;
             } // follow mode vector data
-            next_s = { ego_s+45, ego_s+60, ego_s+90, ego_s+120, ego_s+160 , ego_s+200 , ego_s+250 };
+            next_s = { ego_s+32, ego_s+64, ego_s+96, ego_s+128, ego_s+160 , ego_s+200 , ego_s+250 };
             next_d = { c_next_d, c_next_d, c_next_d, c_next_d , c_next_d  , c_next_d  , c_next_d  }; 
             next_v = { c_next_v, c_next_v, c_next_v, c_next_v , c_next_v  , c_next_v  , c_next_v  };
             cout << "c_next_v "<< c_next_v << "c_next_d " << c_next_d <<endl;
