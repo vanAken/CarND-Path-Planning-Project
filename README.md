@@ -12,17 +12,22 @@ sudo chmod u+x {simulator_file_name}
 ### Goals
 In this project your goal is to safely navigate around a virtual highway with other traffic that is driving +-10 MPH of the 50 MPH speed limit. You will be provided the car's localization and sensor fusion data, there is also a sparse map list of waypoints around the highway. The car should try to go as close as possible to the 50 MPH speed limit, which means passing slower traffic when possible, note that other cars will try to change lanes too. The car should avoid hitting other cars at all cost as well as driving inside of the marked road lanes at all times, unless going from one lane to another. The car should be able to make one complete loop around the 6946m highway. Since the car is trying to go 50 MPH, it should take a little over 5 minutes to complete 1 loop. Also the car should not experience total acceleration over 10 m/s^2 and jerk that is greater than 10 m/s^3.
 
-### status
+### Status
 This is the final version of the path planning project with a scheduling AWL Astar algorithm.
+
 300 m horizon
+
 60s in the future
+
 4x4m discrete areas
+
 1s discretization and every 0.2 seconds an update from the planner
+
 3 lanes
 
-### Model documentation
+# Model documentation
 ## main.cpp
-# either recalculate * or calculate the trajectory
+### either recalculate A* or calculate the trajectory
 In line 81 the decision is made on the timing. Behind this is a very important experience about the latency of Astar planning.
 After a long computing time of approx. 0.1 sec. The position data are no longer correct and the calculated path leads to jerking. The solution to this problem is already anchored in the problem definition, but still everyone must have this experience to understand it: Path calculations or rule interventions are useless if the data is outdated.
 
@@ -49,7 +54,7 @@ This weighting can cause the ego car to fall back when it reaches its destinatio
 
 Source: https://github.com/justinhj/astar-algorithm-cpp
 
-## Trajectory.h
+## trajectory.h
 Based on the first two points of the old trajectory, the length and the speed are determined (line 28,29). and the direction for the new trajectory is taken in the form of the two points and the speed for the new spline construction is taken over (line 32-34).
 
 The next four points are determined by averaging 3 A * points in the d-direction and speed-dependent points in the S direction (lines 44-81). These and all other A * points are back projected in Cartesian coordinates and translated as colons with velocity indication and relative S value into the corresponding output vector (line 88-99) to produce the splines (line 105-110). Finally, the waypoints are generated on them (line 112-136), but the maximum acceleration in the axial and lateral direction must be maintained.
