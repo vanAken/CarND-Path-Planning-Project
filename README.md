@@ -73,7 +73,7 @@ For example, with v_max, five fields can be moved forward in one second if they 
 
 The cost is defined in MapSearchNode :: GetCost:
 The movement costs from the time_road are already available as status variables, so that only the time factor was selected as the speed difference between v_max and v.
-c + v_max - v
+c + v_max - 2v
 This weighting can cause the ego car to fall back when it reaches its destination faster.
 
 Source: https://github.com/justinhj/astar-algorithm-cpp
