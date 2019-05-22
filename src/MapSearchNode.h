@@ -167,11 +167,11 @@ bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapS
                             NewNode     = MapSearchNode( s+5, d  , 5, t+1, cost_so_far, 0);
                             astarsearch->AddSuccessor( NewNode );
                             if ( l4 < 8 && l5 < 8 && l6 < 8){                                         // lanechange left 
-                                NewNode = MapSearchNode( s+5, d+1, 5, t+1, cost_so_far+l5+l, l_cost); //cost extra 
+                                NewNode = MapSearchNode( s+5, d+1, 5, t+1, cost_so_far+l5+l_cost, l_cost); //cost extra 
                                 astarsearch->AddSuccessor( NewNode );
                             }
                             if ( r4 < 8 && r5 < 8 && r6 < 8){                                         // lanechange right
-                                NewNode = MapSearchNode( s+5, d-1, 5, t+1, cost_so_far+r5+l, l_cost); //cost extra 
+                                NewNode = MapSearchNode( s+5, d-1, 5, t+1, cost_so_far+r5+l_cost, l_cost); //cost extra 
                                 astarsearch->AddSuccessor( NewNode );
                             }
                         } 
@@ -190,6 +190,6 @@ bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapS
 double MapSearchNode::GetCost( MapSearchNode &successor )
 {                   // cost for map, lanchange and velocity
        // cout << "c: " << c  endl;
-       return c-v;
+       return c+5-v;
 }
 #endif
