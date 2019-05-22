@@ -23,7 +23,7 @@ public:
 Prediction::Prediction(double ego_s, double d_dt, vector<vector<double>> sensor_fusion,  
                vector<double>previous_path_x,vector<double>previous_path_y, Frenet frenet)
 {   
-    // convert the other cars into discrete areas
+    // place the position of the other cars into the discrete time road
     vector<int> d_other_s, d_other_d, d_o_d_pos, d_o_d_neg;
     vector<double> d_other_v; // continuous velocity 
     for(int i = 0; i < sensor_fusion.size(); i++) {      
@@ -41,17 +41,23 @@ Prediction::Prediction(double ego_s, double d_dt, vector<vector<double>> sensor_
     } 
 
     // write the pre path as 0 to reduce A* flicker
-    for (int i = 0; i < previous_path_x.size(); i++) {  
+    for (int i = 0; i < previous_path_x.size(); i++) { 
          vector<double> previous_sd;
          previous_sd = frenet.xy_to_sd(previous_path_x[i],previous_path_y[i]);
          int previous_s = ::discrete_to_s( previous_sd[0],ego_s);
          int previous_d = ::discrete_to_d( previous_sd[1]);
-         if (previous_s < ::d_horizont_s && previous_d !=0){
-             ::time_road[previous_d + 
-                         previous_s * ::num_of_lanes + 
-                         (i+49)/49  * ::num_of_lanes * ::d_horizont_s]= 0;
+         if (previous_s < ::d_horizont_s){
+             int BMW=0;
+             if  (previous_d==0 ){ 
+                 BMW=1;
+                 if  (previous_s > 15) BMW=2;
+             } // BMW adds costs for keeping lane 0.
+             ::time_road[previous_d +
+                         previous_s * ::num_of_lanes +
+                         (i+49)/49  * ::num_of_lanes * ::d_horizont_s]= BMW;
          }
     } 
+
     
     //place the other cars etc. in the time road for each future secound
     for (int t = 0; t < ::d_horizont_t; t++){
@@ -85,11 +91,8 @@ Prediction::Prediction(double ego_s, double d_dt, vector<vector<double>> sensor_
                         }   
                     }   
                 }
-                if (d_other_d[i]>0){ // add cost on the right side if not lane 0 
-                    ::time_road [ d_other_d[i]-1 + pointer_pre_s] += 1;
-                    if (d_other_d[i]>1){ // add cost on the right side if not lane 0 
-                        ::time_road [ d_other_d[i]-2 + pointer_pre_s] += 1;
-                    }
+                if (d_other_d[i]==1){  // add extra cost on the right side of other cars if lane ==1
+                    ::time_road [ pointer_pre_s] += 1;
                 }  
             }  
         }
@@ -179,7 +182,7 @@ void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, 
                     double s = continuous_to_s (d_s, ego_s ); // continuous results of A*
                     double d = continuous_to_d (d_d        );
                     double v = continuous_to_v (d_v, v_max );
-                    next_s.push_back( s ); // transfer to result
+                    next_s.push_back( s + v ); // transfer to result
                     next_d.push_back( d );
                     next_v.push_back( v );
                 }
@@ -191,45 +194,15 @@ void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, 
             // Once you're done with the solution you can free the nodes up
             astarsearch.FreeSolutionNodes();	
         }	
-        else{ // follow mode calculate distance to the next car
-            double other_vx;
-            double other_vy;
-            double other_v; 
-            double other_s; 
-            double gap_s = 999;
-            double gap_v = 22;
-            for(int i = 0; i < sensor_fusion.size(); i++){
-          	// other car has same lane than ego car
-          	if(nodeStart.d == ::discrete_to_d(sensor_fusion[i][6]) ){
- 		    other_vx = sensor_fusion[i][3];
-          	    other_vy = sensor_fusion[i][4];
-             	    other_v  = sqrt(other_vx*other_vx+other_vy*other_vy);
-          	    other_s  = sensor_fusion[i][5]+other_v*d_dt;
-    	            // is other car is in front?
-           	    if(other_s > ego_s){
-                        // new smalest distance?
-                        double distance = other_s - ego_s; 
-                        if(distance < gap_s and distance < 40){
- 			    gap_s = (other_s - ego_s);
-                            gap_v   = other_v;
-                        }
-                    }
-                }
-            }
-            cout << "gap_s "<< gap_s << "gap_v " << gap_v <<endl;;
-
+        else{ // follow mode: speed will slow down by the contoller
             cout << "Search terminated. Follower mode " << endl;;
             double c_next_d  = ::continuous_to_d( nodeStart.d );
-            double c_next_v;
-            if(gap_s  > v_max ){ //match that cars speed and distance
-                c_next_v = std::min(v_max-1,gap_v+.1);
+            double c_next_v = v_max;
+            for(int i=2; i<::d_horizont_s; i+=2){
+                next_s.push_back( ego_s + i*discrete ); // transfer to result
+                next_d.push_back( c_next_d );
+                next_v.push_back( c_next_v );
             }
-            else{ // brake
-                c_next_v = gap_v-5;
-            } // follow mode vector data
-            next_s = { ego_s+32, ego_s+64, ego_s+96, ego_s+128, ego_s+160 , ego_s+200 , ego_s+250 };
-            next_d = { c_next_d, c_next_d, c_next_d, c_next_d , c_next_d  , c_next_d  , c_next_d  }; 
-            next_v = { c_next_v, c_next_v, c_next_v, c_next_v , c_next_v  , c_next_v  , c_next_v  };
             cout << "c_next_v "<< c_next_v << "c_next_d " << c_next_d <<endl;
         }
         // Display the number of loops the search went through

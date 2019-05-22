@@ -94,7 +94,7 @@ Frenet::Frenet(string map_file) {
         aug_dy.push_back(waypoints_dy[i]);
     }
     if(circular) {
-        for(int i = 0; i < 10; i++) {
+        for(int i = 0; i < 100; i++) {
             aug_x.push_back(waypoints_x[i]);
             aug_y.push_back(waypoints_y[i]);
             aug_s.push_back(waypoints_s[i] + track_s);

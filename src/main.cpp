@@ -17,9 +17,9 @@ int main() {
   string map_file_ = "../data/highway_map.csv";
   Frenet frenet(map_file_);
 
-  double v_max = 44.5 / 2.24   ;          // turn mph into m/s
+  double v_max = 48.75 / 2.24   ;         // turn mph into m/s
   double a_max = 10.0;                    // m/s² 
-  double time_counter_s = 999;            // a* conter is hight to start A* first
+  double time_counter_s = 999;            // a* counter is high to do a A* search first
   vector<double> next_s, next_d, next_v;  // store A* results          
 
   h.onMessage([&frenet, v_max, a_max, &time_counter_s, &next_s, &next_d, &next_v]
@@ -61,7 +61,7 @@ int main() {
           */
 
           const double dt   = 0.02; // telemetry loop
-          const double d_dt = .2 ;  //    A*     loop
+          const double d_dt = 1.0 ;  //    A*     loop
 
           nlohmann::json msgJson;
           string msg = "42[\"manual\",{}]";  // default value ==> Manual driving 
@@ -80,13 +80,13 @@ int main() {
           time_counter_s += dt;              
           if (time_counter_s >= d_dt){  
               time_counter_s = 0;   // reset counter
-              // Create an instance of Prediction and initially fill the ::timeroad
+              // Create an instance of Prediction and fill the global timeroad
               Prediction path (car_s, d_dt, sensor_fusion,previous_path_x, previous_path_y, frenet);
               path.search(car_s, car_d,car_speed/2.24, v_max, a_max, sensor_fusion, d_dt); //start A* 
               next_s = path.next_s;
               next_d = path.next_d;
               next_v = path.next_v;          
-              print_time_raod(); // print discrete solution to std_out
+              print_time_raod(); // print the discrete solution to std_out
           } 
           else{
               Trajectory trajectory(previous_path_x, previous_path_y, v_max, a_max, frenet, next_s, next_d, next_v, sensor_fusion, dt);

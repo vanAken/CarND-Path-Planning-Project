@@ -59,7 +59,7 @@ void print_time_raod(){
     for (int s = ::d_horizont_s-1; s >= 0; --s){  // reverse order
         int s_nol = s * ::num_of_lanes;
         int map =  ::num_of_lanes * ::d_horizont_s;
-        for (int column=0; column < 25;column++){   
+        for (int column=0; column < 30;column++){   
             for (int lane=2; 0 <= lane; lane--){
                 if (time_road[lane+s_nol+ column*map] == 99){ 
                     if (lane==2)std::cout << "\033[35m\033[1m" << "0" << "\033[0m";
@@ -100,8 +100,8 @@ int discrete_to_d(double d) {
     return result;
 }
 double continuous_to_d(int d) {          // back to continous  d 
-    const double road_offset = 9.99;      // distance to the outside right midlane
-    const double lane_width  = 3.99;  
+    const double road_offset = 9.8;      // distance to the outside right midlane
+    const double lane_width  = 3.8;  
     return (road_offset - d * lane_width); 
 }
 
