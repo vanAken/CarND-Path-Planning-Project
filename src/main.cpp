@@ -12,15 +12,14 @@
 #include "trajectory.h"
 #include "prediction.h"
 
-
 int main() {
   uWS::Hub h;
   string map_file_ = "../data/highway_map.csv";
   Frenet frenet(map_file_);
 
-  double v_max = 49.0 / 2.24   ; // turn mph into m/s
-  double a_max = 10.0;           // m/s² 
-  double time_counter_s = 999;   // start an update eraly    
+  double v_max = 48.75 / 2.24   ;         // turn mph into m/s
+  double a_max = 10.0;                    // m/s² 
+  double time_counter_s = 999;            // a* counter is high to do a A* search first
   vector<double> next_s, next_d, next_v;  // store A* results          
 
   h.onMessage([&frenet, v_max, a_max, &time_counter_s, &next_s, &next_d, &next_v]
@@ -61,38 +60,36 @@ int main() {
           *   sequentially every .02 seconds
           */
 
-          const double dt   = 0.02;
-          const double d_dt = .2 ;
+          const double dt   = 0.02; // telemetry loop
+          const double d_dt = 1.0 ;  //    A*     loop
 
           nlohmann::json msgJson;
-          string msg = "42[\"manual\",{}]";  // default value ==> Manual driving     
+          string msg = "42[\"manual\",{}]";  // default value ==> Manual driving 
 
-          // generate the first two points for v=0.5m/s if previous_path_x is too empty
+          // generate the first two points for v=0.5m/s, if previous_path_x is empty
           if(previous_path_x.size() < 2) { 
-              double ini_l = max(.5, car_speed) * dt; // l = v * t or 0.5 for low speed
+              double ini_l = max(car_speed,0.5) * dt; // l = v * t or 0.5 for low speed
               previous_path_x = {car_x, car_x + cos(deg2rad(car_yaw))* ini_l};
               previous_path_y = {car_y, car_y + sin(deg2rad(car_yaw))* ini_l};  
-              msgJson["next_x"] = previous_path_x; // send this data for the initial loop
+              msgJson["next_x"] = previous_path_x;    // send the initial points to telemetry
               msgJson["next_y"] = previous_path_y;   
               msg = "42[\"control\","+ msgJson.dump()+"]123";
           }  
 
-          //either recalculate a* or calculate the trajectory
+          // either recalculate a* or calculate the trajectory
           time_counter_s += dt;              
           if (time_counter_s >= d_dt){  
-              time_counter_s = 0;   // next d_dt secound again
-              // Create an instance of Prediction and create the ::timeroad
+              time_counter_s = 0;   // reset counter
+              // Create an instance of Prediction and fill the global timeroad
               Prediction path (car_s, d_dt, sensor_fusion,previous_path_x, previous_path_y, frenet);
-              path.search(car_s, car_d,car_speed/2.24, v_max, a_max, sensor_fusion, d_dt);     // start A* 
+              path.search(car_s, car_d,car_speed/2.24, v_max, a_max, sensor_fusion, d_dt); //start A* 
               next_s = path.next_s;
               next_d = path.next_d;
               next_v = path.next_v;          
-              print_time_raod(); // print discrete solution 
+              print_time_raod(); // print the discrete solution to std_out
           } 
-          else{// update of Trajectory due telemetry data is in sync with time, because of no A* search 
-              // generate dots for the packman - can't use car_s and car_d due A* time
-              Trajectory trajectory(previous_path_x, previous_path_y, v_max, a_max,
-                              frenet, next_s, next_d, next_v, dt);
+          else{
+              Trajectory trajectory(previous_path_x, previous_path_y, v_max, a_max, frenet, next_s, next_d, next_v, sensor_fusion, dt);
               msgJson["next_x"] = trajectory.next_x;
               msgJson["next_y"] = trajectory.next_y;                            
               msg = "42[\"control\","+ msgJson.dump()+"]123";

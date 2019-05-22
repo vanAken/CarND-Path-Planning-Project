@@ -69,7 +69,7 @@ Frenet::Frenet(string map_file) {
     double distance_to_close = distance( waypoints_x[0], waypoints_y[0], waypoints_x[waypoints_x.size()-1], waypoints_y[waypoints_y.size()-1]);
     circular = (distance_to_close < 100);
 
-    // The circular need to add beginning points to end and vice-versa to create overlap
+    // The circular need to add beginning points to end to create an overlap closed track
     vector<double> aug_x;
     vector<double> aug_y;
     vector<double> aug_s;
@@ -78,7 +78,7 @@ Frenet::Frenet(string map_file) {
     track_s = max_waypoint_s - min_waypoint_s;
     if(circular) {
         track_s += distance_to_close;
-        for(int i : {waypoints_s.size() - 2, waypoints_s.size() - 1}) {
+        for(int i = waypoints_s.size() - 2; i < waypoints_s.size(); i++ ) {
             aug_x.push_back(waypoints_x[i]);
             aug_y.push_back(waypoints_y[i]);
             aug_s.push_back(waypoints_s[i] - track_s);
@@ -94,7 +94,7 @@ Frenet::Frenet(string map_file) {
         aug_dy.push_back(waypoints_dy[i]);
     }
     if(circular) {
-        for(int i : {0, 1}) {
+        for(int i = 0; i < 100; i++) {
             aug_x.push_back(waypoints_x[i]);
             aug_y.push_back(waypoints_y[i]);
             aug_s.push_back(waypoints_s[i] + track_s);
