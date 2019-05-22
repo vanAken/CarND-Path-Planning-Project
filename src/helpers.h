@@ -36,10 +36,10 @@ double distance(double x1, double y1, double x2, double y2) {
 // global variabls
 ///////////////////////////////////////////////////////////////////////////////////
 
-const int discrete =  4; // in s and v: 4m one area 4m/s one speed case
+const int discrete =  4; // in s and v direction 4m one area
 
 const int num_of_lanes =  3;
-const long d_horizont_s = 300/discrete ; // m look ahead distance
+const long d_horizont_s = 280/discrete ; // m frontview
 const int  d_horizont_t = 60;
 
 int time_road[num_of_lanes * d_horizont_s * d_horizont_t];  //size of 3D time_road = 2D(t) as 1D array
@@ -59,7 +59,7 @@ void print_time_raod(){
     for (int s = ::d_horizont_s-1; s >= 0; --s){  // reverse order
         int s_nol = s * ::num_of_lanes;
         int map =  ::num_of_lanes * ::d_horizont_s;
-        for (int column=0; column < 30;column++){   
+        for (int column=0; column < 40;column++){   
             for (int lane=2; 0 <= lane; lane--){
                 if (time_road[lane+s_nol+ column*map] == 99){ 
                     if (lane==2)std::cout << "\033[35m\033[1m" << "0" << "\033[0m";
@@ -77,39 +77,6 @@ void print_time_raod(){
     std::cout << s <<  std::endl;
     } 
     std::cout << "=0===1===2===3===4===5===6===7===8===9==10==11==12==13==15==16==17==18==19==20==21 t(d_dt)" << std::endl;
-}
-
-// 6 Function for converting s, d and v from the continuous action space into discrete values and vice versa
- 
-int discrete_to_s(double s, double ego_s){ // ego_s converts to zero
-    int result = int( (s-ego_s + discrete/2 ) / discrete );
-    if (result > 1000) result -= 1732; // howerver 6945,554÷4 = 1736,3885  
-    if (result <-1000) result += 1732; // but value jumps from 1732-1731 
-    return result;                     // results are between 0 and max 1000
-}
-double continuous_to_s(int s, double ego_s) {  // back to continous s
-    return s * discrete  + ego_s;
-}
-
-int discrete_to_d(double d) {  
-    const int road_width = 12;           // left lane is 2
-    const int lane_width =  4;           // right lane is 0  
-    int result = int(( road_width - d) / lane_width );
-    result = std::max(result, 0);              // cut to the left
-    result = std::min(result, num_of_lanes-1); // cut to the right
-    return result;
-}
-double continuous_to_d(int d) {          // back to continous  d 
-    const double road_offset = 9.8;      // distance to the outside right midlane
-    const double lane_width  = 3.8;  
-    return (road_offset - d * lane_width); 
-}
-
-double discrete_to_v(double v) {         // every discrete*m/s one area                      
-    return  v / discrete ;    
-}
-double continuous_to_v(double v, double v_max) { // back to continous v  
-    return v * discrete * v_max/20 ;
 }
 
 #endif  // HELPERS_H
