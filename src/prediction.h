@@ -50,7 +50,7 @@ Prediction::Prediction(double ego_s, double d_dt, vector<vector<double>> sensor_
              int BMW=0;
              if  (previous_d==0 ){ 
                  BMW=1;
-                 if  (previous_s > 15) BMW=2;
+                 if  (previous_s > 10) BMW=2;
              } // BMW adds costs for keeping lane 0.
              ::time_road[previous_d +
                          previous_s * ::num_of_lanes +
@@ -92,7 +92,7 @@ Prediction::Prediction(double ego_s, double d_dt, vector<vector<double>> sensor_
                     }   
                 }
                 if (d_other_d[i]==1){  // add extra cost on the right side of other cars if lane ==1
-                    ::time_road [ pointer_pre_s] += 2;
+                    ::time_road [ pointer_pre_s] += 1;
                 }  
             }  
         }
