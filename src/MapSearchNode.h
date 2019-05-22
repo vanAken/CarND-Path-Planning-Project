@@ -98,7 +98,8 @@ bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapS
     int r6 = GetMap(d-1,s+6,t+1);
 
     const int l_cost = 3;
-    l -= 1; 
+    if (l>0) l -= 1;
+       
 
     int cost_so_far = 0;          // store cost  
     int m = GetMap( d, s+0, t+1); // cost from map - car = 8 or 9  
