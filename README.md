@@ -1,75 +1,210 @@
-# CarND-Path-Planning-Project
+# Path Planning
+[![Udacity - Self-Driving Car NanoDegree](https://s3.amazonaws.com/udacity-sdc/github/shield-carnd.svg)](http://www.udacity.com/drive)
+
 Self-Driving Car Engineer Nanodegree Program
-   
-### Simulator.
-You can download the Term3 Simulator which contains the Path Planning Project from the [releases tab (https://github.com/udacity/self-driving-car-sim/releases/tag/T3_v1.2).  
 
-To run the simulator on Mac/Linux, first make the binary file executable with the following command:
-```shell
-sudo chmod u+x {simulator_file_name}
-```
+---
 
-### Goals
-In this project your goal is to safely navigate around a virtual highway with other traffic that is driving +-10 MPH of the 50 MPH speed limit. You will be provided the car's localization and sensor fusion data, there is also a sparse map list of waypoints around the highway. The car should try to go as close as possible to the 50 MPH speed limit, which means passing slower traffic when possible, note that other cars will try to change lanes too. The car should avoid hitting other cars at all cost as well as driving inside of the marked road lanes at all times, unless going from one lane to another. The car should be able to make one complete loop around the 6946m highway. Since the car is trying to go 50 MPH, it should take a little over 5 minutes to complete 1 loop. Also the car should not experience total acceleration over 10 m/s^2 and jerk that is greater than 10 m/s^3.
+An A* algorithm in four dimensions controls a simulated car on a highway,
+safely passing other cars at 50 mph. I estimate the motion of other cars based on the
+assumption of constant speed within their current lane. Car state for the A* algorithm
+includes two spatial dimensions (along and across the highway), speed (along
+the highway), and time. The time dimension is necessary because the estimated positions
+of other cars change with time. Automated tests cover trajectory planning for a variety
+of traffic patterns.
 
-### Status
-This is the final version of the path planning project with a scheduling AWL Astar algorithm.
+[![video of car on highway](https://github.com/ericlavigne/CarND-Path-Planning/raw/master/img/youtube-thumb.png)](https://youtu.be/ouSjnpnRL7w)
 
-300 m horizon
+---
 
-60s in the future
+### Beyond the Requirements
 
-4x4m discrete areas
+I developed this project for Udacity’s Self-Driving Car nanodegree and substantially exceeded the project requirements in the following ways:
 
-1s discretization and every 0.2 seconds an update from the planner
+* A* algorithm for path planning rather than heuristics
+* Clear separation of concerns: A* algorithm, trajectory planner, controller, prediction
+* Automated tests for the trajectory planner
 
-3 lanes
+*Note: Find the latest version of this project on
+[Github](https://github.com/ericlavigne/CarND-Path-Planning).*
 
-# Model documentation
-## main.cpp
-### either recalculate A* or calculate the trajectory
-In line 81 the decision is made on the timing. Behind this is a very important experience about the latency of Astar planning.
-After a long computing time of approx. 0.1 sec. The position data are no longer correct and the calculated path leads to jerking. The solution to this problem is already anchored in the problem definition, but still everyone must have this experience to understand it: Path calculations or rule interventions are useless if the data is outdated.
+---
 
-## prediction.h
-When the prediction object is initialized, the global timeline is created. This is a stack of discrete maps for the Astar algorithm with dimensions s, d, and t filled with ones, the cost of movement on the maps, and through the stack. A 8-9-8 means that there is another vehicle with a length of 3 (12 m) and a width of 1 (4 m) and this field may not be used. Front and back there is a potential field with the values ​​3,3,2,1 and a right next to it, which governs overtaking in case of doubt. It is important that the old path of the previous planning is filled with zeros, so that it is preferably used.
+### Contents
 
-The search method is initialized and starts Astar. If no result is found, Astar starts with a shorter horizon. If this is unsuccessful, a tracking mode calculates a safe distance path to the forward vehicle so that in any case the vectors for s d and v are stored globally at one second intervals for the corresponding horizon.
+* [Project Components](#project-components)
+  * [A* Algorithm](#a-star-algorithm)
+  * [Prediction](#prediction)
+  * [Trajectory State](#trajectory-state)
+  * [Discrete Trajectory Planner](#discrete-trajectory-planner)
+  * [Automated Testing](#automated-testing)
+  * [Trajectory Planner](#trajectory-planner)
+  * [Frenet Conversion](#frenet-conversion)
+  * [Controller](#controller)
+* [Usage](#usage)
+  * [Downloading the Simulator](#downloading-the-simulator)
+  * [Installing Dependencies](#installing-dependencies)
+  * [Build Instructions](#build-instructions)
+  * [Running Automated Tests](#running-automated-tests)
+  * [Running Planner with the Simulator](#running-planner-with-the-simulator)
+* [Background](#background)
+  * [Goals](#goals)
+  * [Highway Map](#highway-map)
+  * [Data from Simulator](#data-from-simulator)
+  * [Details](#details)
 
+---
 
-## MapSearchNode.h
-MapSearchNode contains all external functions of the
-Astar algorithms from the Standard C ++ STL by Justin Heyes-Jones. The library operates on the principle of the priority queue, where all generated nodes have a status vector and are sorted by cost.
+### Project Components
 
-The MapSearchNode :: GetSuccessors function determines when a new node is created and what status it should have.
+#### A-Star Algorithm
 
-For example, with v_max, five fields can be moved forward in one second if they are free - the cost must be added to the status of the new node.
-Strip changes cost double on both sides of the lane marking.
+* Generic A* algorithm can work with variety of state representation.
+* Applied to Trajectory State for 4-dimensional path planning: s, d, v, t.
+* See code in [astar.h](https://github.com/ericlavigne/CarND-Path-Planning/blob/master/src/astar.h).
 
+#### Prediction
 
-The cost is defined in MapSearchNode :: GetCost:
-The movement costs from the time_road are already available as status variables, so that only the time factor was selected as the difference between v_max and v.
-c + 2 * (v_max -v)
-This weighting can cause the ego car to fall back when it reaches its destination faster.
+* Predicts future positions of other cars by assuming that they will move at constant speed within their current lanes.
+* Cars that are changing lanes are conservatively predicted to be in both lanes two seconds later.
+* See code in [discrete\_prediction.h](https://github.com/ericlavigne/CarND-Path-Planning/blob/master/src/discrete_prediction.h) and [discrete\_prediction.cpp](https://github.com/ericlavigne/CarND-Path-Planning/blob/master/src/discrete_prediction.cpp).
 
-Source: https://github.com/justinhj/astar-algorithm-cpp
+#### Trajectory State
 
-## trajectory.h
-Based on the first two points of the old trajectory, the length and the speed are determined (line 28,29). and the direction for the new trajectory is taken in the form of the two points and the speed for the new spline construction is taken over (line 32-34).
+* Represents 4-dimensional car state (s,d,v,t) for A* algorithm in context of discrete trajectory planner.
+* Includes basic car physics: acceleration, deceleration, and lane changing.
+* Includes goal of advancing along the highway.
+* Applies penalties for crashing or tailgating.
+* See code in [trajectory\_state.h](https://github.com/ericlavigne/CarND-Path-Planning/blob/master/src/trajectory_state.h) and [trajectory\_state.cpp](https://github.com/ericlavigne/CarND-Path-Planning/blob/master/src/trajectory_state.cpp).
 
-The next four points are determined by averaging 3 A * points in the d-direction and speed-dependent points in the S direction (lines 44-81). These and all other A * points are back projected in Cartesian coordinates and translated as colons with velocity indication and relative S value into the corresponding output vector (line 88-99) to produce the splines (line 105-110). Finally, the waypoints are generated on them (line 112-136), but the maximum acceleration in the axial and lateral direction must be maintained.
+#### Discrete Trajectory Planner
 
-For safety reasons, it is checked before a lane change, whether this is still free because A * can not spend any mobile trajectories due to the latency and the architecture. For this purpose, the method "Trajectory :: calc_gap" (line 139) is used.
+* Combines A* algorithm with Trajectory State to perform planning.
+* Discretization with 1 meter precision along the road and 2 meter precision across the road to reduce A* search space.
+* See code in [discrete\_trajectory\_planner.h](https://github.com/ericlavigne/CarND-Path-Planning/blob/master/src/discrete_trajectory_planner.h) and [discrete\_trajectory\_planner.cpp](https://github.com/ericlavigne/CarND-Path-Planning/blob/master/src/discrete_trajectory_planner.cpp).
 
-## helpers.h
-Here are the helpers, such as global variables and functions for A * including the conversion functions
+#### Automated Testing
 
-## frenet.h
-This object is a very reusable object. It reads all waypoints and describes the optional closed track with splines. The methods can convert Cartesian coordinates to Frenet coordinates and vice versa.
-Source: The algorithms come from a post by Eric Lavigne "# t3-p-path-planning" of May 13, 2018.
+* Test for optimal behavior in four scenarios:
+  * Clear road
+  * Passing between two cars
+  * All lanes blocked
+  * Snaking through formation of cars
+* See code in [discrete\_trajectory\_planner\_test.cpp](https://github.com/ericlavigne/CarND-Path-Planning/blob/master/test/discrete_trajectory_planner_test.cpp).
 
-## spline.h
-simple cubic spline interpolation library without external dependencies
-Source: https://kluge.in-chemnitz.de/opensource/spline/
+#### Trajectory Planner
 
+* Converts continuous data about self and other cars into discrete representation for Discrete Trajectory Planner.
+* Converts discrete representation back to continuous representation for use in controlling car.
+* See code in [discrete\_trajectory\_planner.h](https://github.com/ericlavigne/CarND-Path-Planning/blob/master/src/discrete_trajectory_planner.h) and [discrete\_trajectory\_planner.cpp](https://github.com/ericlavigne/CarND-Path-Planning/blob/master/src/discrete_trajectory_planner.cpp).
+
+#### Frenet Conversion
+
+* Converts between cartesian (x,y) and frenet (s,d) coordinates.
+* Needed because trajectory planning uses frenet while sensors and controller use cartesian.
+* Uses splines for much better accuracy compared with linear interpolation.
+* See code in [track.h](https://github.com/ericlavigne/CarND-Path-Planning/blob/master/src/track.h) and [track.cpp](https://github.com/ericlavigne/CarND-Path-Planning/blob/master/src/track.cpp).
+
+#### Controller
+
+* Directly controls speed and path of car to follow waypoints from Trajectory Planner.
+* Determines acceleration based on assumption of constant acceleration between current state and one second later in the Trajectory Planner's waypoints.
+* Determines precise path in 0.02 second increments by applying spline from current state through all of the Trajectory Plannner's waypoints.
+* See code in [controller.h](https://github.com/ericlavigne/CarND-Path-Planning/blob/master/src/controller.h) and [controller.cpp](https://github.com/ericlavigne/CarND-Path-Planning/blob/master/src/controller.cpp).
+
+### Usage
+
+#### Downloading the Simulator
+You can download the Term3 Simulator which contains the Path Planning Project from the [releases tab (https://github.com/udacity/self-driving-car-sim/releases).
+
+#### Installing Dependencies
+
+* cmake >= 3.5
+ * All OSes: [click here for installation instructions](https://cmake.org/install/)
+* make >= 4.1
+  * Linux: make is installed by default on most Linux distros
+  * Mac: [install Xcode command line tools to get make](https://developer.apple.com/xcode/features/)
+  * Windows: [Click here for installation instructions](http://gnuwin32.sourceforge.net/packages/make.htm)
+* gcc/g++ >= 5.4
+  * Linux: gcc / g++ is installed by default on most Linux distros
+  * Mac: same deal as make - [install Xcode command line tools]((https://developer.apple.com/xcode/features/)
+  * Windows: recommend using [MinGW](http://www.mingw.org/)
+* [uWebSockets](https://github.com/uWebSockets/uWebSockets)
+  * Run either `install-mac.sh` or `install-ubuntu.sh`.
+  * If you install from source, checkout to commit `e94b6e1`, i.e.
+    ```
+    git clone https://github.com/uWebSockets/uWebSockets
+    cd uWebSockets
+    git checkout e94b6e1
+    ```
+
+#### Build Instructions
+
+1. Clone this repo.
+2. Make a build directory: `mkdir build && cd build`
+3. Compile: `cmake .. && make`
+
+#### Running Automated Tests
+
+`./test_path_planning`
+
+#### Running Planner with the Simulator
+
+1. Run the planner: `./path_planning`
+2. Run the simulator.
+
+### Background
+
+#### Goals
+In this project your goal is to safely navigate around a virtual highway with other traffic that is driving +-10 MPH of the 50 MPH speed limit. You will be provided the car's localization and sensor fusion data, there is also a sparse map list of waypoints around the highway. The car should try to go as close as possible to the 50 MPH speed limit, which means passing slower traffic when possible, note that other cars will try to change lanes too. The car should avoid hitting other cars at all cost as well as driving inside of the marked road lanes at all times, unless going from one lane to another. The car should be able to make one complete loop around the 6946m highway. Since the car is trying to go 50 MPH, it should take a little over 5 minutes to complete 1 loop. Also the car should not experience total acceleration over 10 m/s^2 and jerk that is greater than 50 m/s^3.
+
+#### Highway Map
+
+The map of the highway is in data/highway_map.txt
+Each waypoint in the list contains  [x,y,s,dx,dy] values. x and y are the waypoint's map coordinate position, the s value is the distance along the road to get to that waypoint in meters, the dx and dy values define the unit normal vector pointing outward of the highway loop.
+
+The highway's waypoints loop around so the frenet s value, distance along the road, goes from 0 to 6945.554.
+
+#### Data from Simulator
+
+Here is the data provided from the Simulator to the C++ Program
+
+##### Main car's localization Data (No Noise)
+
+["x"] The car's x position in map coordinates
+
+["y"] The car's y position in map coordinates
+
+["s"] The car's s position in frenet coordinates
+
+["d"] The car's d position in frenet coordinates
+
+["yaw"] The car's yaw angle in the map
+
+["speed"] The car's speed in MPH
+
+##### Previous path data given to the Planner
+
+//Note: Return the previous list but with processed points removed, can be a nice tool to show how far along
+the path has processed since last time.
+
+["previous_path_x"] The previous list of x points previously given to the simulator
+
+["previous_path_y"] The previous list of y points previously given to the simulator
+
+##### Previous path's end s and d values
+
+["end_path_s"] The previous list's last point's frenet s value
+
+["end_path_d"] The previous list's last point's frenet d value
+
+##### Sensor Fusion Data, a list of all other car's attributes on the same side of the road. (No Noise)
+
+["sensor_fusion"] A 2d vector of cars and then that car's [car's unique ID, car's x position in map coordinates, car's y position in map coordinates, car's x velocity in m/s, car's y velocity in m/s, car's s position in frenet coordinates, car's d position in frenet coordinates.
+
+#### Details
+
+1. The car uses a perfect controller and will visit every (x,y) point it recieves in the list every .02 seconds. The units for the (x,y) points are in meters and the spacing of the points determines the speed of the car. The vector going from a point to the next point in the list dictates the angle of the car. Acceleration both in the tangential and normal directions is measured along with the jerk, the rate of change of total Acceleration. The (x,y) point paths that the planner recieves should not have a total acceleration that goes over 10 m/s^2, also the jerk should not go over 50 m/s^3. (NOTE: As this is BETA, these requirements might change. Also currently jerk is over a .02 second interval, it would probably be better to average total acceleration over 1 second and measure jerk from that.
+
+2. There will be some latency between the simulator running and the path planner returning a path, with optimized code usually its not very long maybe just 1-3 time steps. During this delay the simulator will continue using points that it was last given, because of this its a good idea to store the last points you have used so you can have a smooth transition. previous_path_x, and previous_path_y can be helpful for this transition since they show the last points given to the simulator controller with the processed points already removed. You would either return a path that extends this previous path or make sure to create a new path that has a smooth transition with this last path.
 
