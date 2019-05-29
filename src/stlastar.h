@@ -23,7 +23,7 @@ given where due.
 
 */
 
-#ifndef STLASTAR_H
+#ifndef STLASTAR_H 
 #define STLASTAR_H
 // used for text debugging
 #include <iostream>
