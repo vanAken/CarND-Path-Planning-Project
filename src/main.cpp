@@ -17,7 +17,7 @@ int main() {
   string map_file_ = "../data/highway_map.csv";
   Frenet frenet(map_file_);
 
-  double v_max = 48.75 / 2.24   ;         // turn mph into m/s
+  double v_max = 48.9 / 2.24   ;         // turn mph into m/s
   double a_max = 10.0;                    // m/s² 
   double time_counter_s = 999;            // a* counter is high to do a A* search first
   vector<double> next_s, next_d, next_v;  // store A* results          
@@ -61,7 +61,7 @@ int main() {
           */
 
           const double dt   = 0.02; // telemetry loop
-          const double d_dt = 1.0 ;  //    A*     loop
+          const double d_dt = 0.25;  //    A*     loop
 
           nlohmann::json msgJson;
           string msg = "42[\"manual\",{}]";  // default value ==> Manual driving 

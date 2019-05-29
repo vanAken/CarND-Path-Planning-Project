@@ -97,7 +97,7 @@ bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapS
     int r5 = GetMap(d-1,s+5,t+1);
     int r6 = GetMap(d-1,s+6,t+1);
 
-    const int l_cost = 3;
+    const int l_cost = 4;
     if (l>0) l -= 1;
        
 
@@ -123,11 +123,11 @@ bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapS
                 NewNode     = MapSearchNode( s+2, d  , 2, t+1, cost_so_far, 0);
                 astarsearch->AddSuccessor( NewNode );
                 if ( l1 < 8 && l2 < 8 && l3 < 8){                                         // lanechange left 
-                    NewNode = MapSearchNode( s+2, d+1, 2, t+1, cost_so_far+l, l_cost); //cost extra 
+                    NewNode = MapSearchNode( s+2, d+1, 2, t+1, cost_so_far+r2+l*l,l_cost); //cost extra 
                     astarsearch->AddSuccessor( NewNode );
                 }
                 if ( r1 < 8 && r2 < 8 && r3 < 8){                                         // lanechange right
-                    NewNode = MapSearchNode( s+2, d-1, 2, t+1, cost_so_far+l, l_cost); //cost extra 
+                    NewNode = MapSearchNode( s+2, d-1, 2, t+1, cost_so_far+r2+l*l,l_cost); //cost extra 
                     astarsearch->AddSuccessor( NewNode );
                 }
             }
@@ -138,11 +138,11 @@ bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapS
                     NewNode     = MapSearchNode( s+3, d  , 3, t+1, cost_so_far, 0);
                     astarsearch->AddSuccessor( NewNode );
                     if ( l2 < 8 && l3 < 8 && l4 < 8){                                         // lanechange left 
-                        NewNode = MapSearchNode( s+3, d+1, 3, t+1, cost_so_far+l, l_cost); //cost extra 
+                        NewNode = MapSearchNode( s+3, d+1, 3, t+1, cost_so_far+l3+l*l,l_cost); //cost extra 
                         astarsearch->AddSuccessor( NewNode );
                     }
                     if ( r2 < 8 && r3 < 8 && r4 < 8){                                         // lanechange right
-                        NewNode = MapSearchNode( s+3, d-1, 3, t+1, cost_so_far+l, l_cost); //cost extra 
+                        NewNode = MapSearchNode( s+3, d-1, 3, t+1, cost_so_far+r3+l*l,l_cost); //cost extra 
                         astarsearch->AddSuccessor( NewNode );
                     }
                 }
@@ -153,11 +153,11 @@ bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapS
                         NewNode     = MapSearchNode( s+4, d  , 4, t+1, cost_so_far, 0);
                         astarsearch->AddSuccessor( NewNode );
                         if ( l3 < 8 && l4 < 8 && l5 < 8){                                         // lanechange left 
-                            NewNode = MapSearchNode( s+4, d+1, 4, t+1, cost_so_far+l, l_cost); //cost extra 
+                            NewNode = MapSearchNode( s+4, d+1, 4, t+1, cost_so_far+l4+l*l,l_cost); //cost extra 
                             astarsearch->AddSuccessor( NewNode );
                         }  
                         if ( r3 < 8 && r4 < 8 && r5 < 8){                                         // lanechange right
-                            NewNode = MapSearchNode( s+4, d-1, 4, t+1, cost_so_far+l, l_cost); //cost extra 
+                            NewNode = MapSearchNode( s+4, d-1, 4, t+1, cost_so_far+r4+l*l,l_cost); //cost extra 
                             astarsearch->AddSuccessor( NewNode );
                         }
                     }
@@ -168,11 +168,11 @@ bool MapSearchNode::GetSuccessors( AStarSearch<MapSearchNode> *astarsearch, MapS
                             NewNode     = MapSearchNode( s+5, d  , 5, t+1, cost_so_far, 0);
                             astarsearch->AddSuccessor( NewNode );
                             if ( l4 < 8 && l5 < 8 && l6 < 8){                                         // lanechange left 
-                                NewNode = MapSearchNode( s+5, d+1, 5, t+1, cost_so_far+l_cost, l_cost); //cost extra 
+                                NewNode = MapSearchNode( s+5, d+1, 5, t+1, cost_so_far+l5+l*l,l_cost); //cost extra 
                                 astarsearch->AddSuccessor( NewNode );
                             }
                             if ( r4 < 8 && r5 < 8 && r6 < 8){                                         // lanechange right
-                                NewNode = MapSearchNode( s+5, d-1, 5, t+1, cost_so_far+l_cost, l_cost); //cost extra 
+                                NewNode = MapSearchNode( s+5, d-1, 5, t+1, cost_so_far+r5+l*l,l_cost); //cost extra 
                                 astarsearch->AddSuccessor( NewNode );
                             }
                         } 

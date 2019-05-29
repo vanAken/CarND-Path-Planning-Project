@@ -50,7 +50,7 @@ Prediction::Prediction(double ego_s, double d_dt, vector<vector<double>> sensor_
              int BMW=0;
              if  (previous_d==0 ){ 
                  BMW=1;
-                 if  (previous_s > 10) BMW=2;
+                 //if  (previous_s > 10) BMW=2;
              } // BMW adds costs for keeping lane 0.
              ::time_road[previous_d +
                          previous_s * ::num_of_lanes +
@@ -197,7 +197,7 @@ void Prediction::search(double ego_s, double ego_d, double ego_v, double v_max, 
         else{ // follow mode: speed will slow down by the contoller
             cout << "Search terminated. Follower mode " << endl;;
             double c_next_d  = ::continuous_to_d( nodeStart.d );
-            double c_next_v = v_max;
+            double c_next_v = v_max-1;
             for(int i=2; i<::d_horizont_s; i+=2){
                 next_s.push_back( ego_s + i*discrete ); // transfer to result
                 next_d.push_back( c_next_d );

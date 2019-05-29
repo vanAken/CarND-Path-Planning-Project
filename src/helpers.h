@@ -100,8 +100,8 @@ int discrete_to_d(double d) {
     return result;
 }
 double continuous_to_d(int d) {          // back to continous  d 
-    const double road_offset = 9.8;      // distance to the outside right midlane
-    const double lane_width  = 3.8;  
+    const double road_offset = 9.99;      // distance to the outside right midlane
+    const double lane_width  = 3.99;  
     return (road_offset - d * lane_width); 
 }
 

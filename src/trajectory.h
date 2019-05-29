@@ -22,7 +22,7 @@ private:
 
 Trajectory::Trajectory( vector<double> previous_path_x, vector<double> previous_path_y, double v_max, double a_max,
                         Frenet frenet, vector<double>next_s, vector<double>next_d, vector<double>next_v, vector<vector<double>> sensor_fusion, double dt)
-{   const long max_waypoints = 600;
+{   const long max_waypoints = 690;
     next_x = {previous_path_x[0],previous_path_x[1]};   // take the first two points of the old path
     next_y = {previous_path_y[0],previous_path_y[1]};   // as start points for the next trajectory
     double dl  = distance( next_x[0],next_y[0],next_x[1],next_y[1]); // between the initial points 
@@ -45,7 +45,7 @@ Trajectory::Trajectory( vector<double> previous_path_x, vector<double> previous_
          next_d[0] = continuous_to_d(discrete_to_d(next_sd0[1]));
     }
     next_s[0] = next_sd0[0]+1.6*v_t;   // skipp this point during lane change
-    next_s[1] = next_sd0[0]+1.8*v_t;    // change next_s in a defined position
+    next_s[1] = next_sd0[0]+2.8*v_t;    // change next_s in a defined position
     next_s[2] = next_sd0[0]+2.0*v_t;  
     next_s[3] = next_sd0[0]+2.5*v_t;
     next_s[4] = next_sd0[0]+3.0*v_t;    
@@ -62,6 +62,7 @@ Trajectory::Trajectory( vector<double> previous_path_x, vector<double> previous_
         next_v[3] = next_v[0];
         next_v[4] = next_v[0];
     }
+
 
     // push the next spline points from A* 
     vector<double> next_xy; // tmp var
@@ -97,18 +98,19 @@ Trajectory::Trajectory( vector<double> previous_path_x, vector<double> previous_
     // generate waypoints 
     while( next_x.size() < max_waypoints) {  
         if (v_t <= spline_v(v_t+dl) ) v_t = std::min(v_max, v_t + a_max/2 * dt); 
-        else                          v_t = std::max( 0.  , v_t - a_max   * dt);
+        else                          v_t = std::max( 0.  , v_t - a_max/2 * dt);
+        //v_t =99.; 
         dl += v_t * dt;
         double next_x_lin = 2*next_x[next_x.size()-1]-next_x[next_x.size()-2]; // next_x_lin = 2*x_2-x_1
         double next_y_lin = 2*next_y[next_y.size()-1]-next_y[next_y.size()-2]; // also y
         double next_x_spl = spline_x(dl);                                      // next nonlinear x
         double next_y_spl = spline_y(dl);                                      // also y
-        double d = 1e-9+distance(next_x_lin,next_y_lin,next_x_spl,next_y_spl); // d is the differenc between spline and linear tangetial path normal to s
+        double d = distance(next_x_lin,next_y_lin,next_x_spl,next_y_spl); // d is the differenc between spline and linear tangetial path normal to s
         double d_pp = 2*d/(dt*dt);                 // second derivative of d: dpp = d/dt² ,which result in lateral acceleration
         double d_max = std::min( a_max, d_pp )*dt*dt/2; // d must be limited by a_max or d_pp
         
-        double d_ratio = d_max / d;                // the factor d_ratio is used to scals down d
-        if (dl < v_t * 3. ){                       // apply d_ratio on the spline pints
+        double d_ratio = d_max / (d+1e-9); // the factor d_ratio is used to scals down d
+        if (dl < v_t*3. && d_ratio < .9 ){                       // apply d_ratio on the spline pints
             next_x.push_back( next_x_lin+(next_x_spl-next_x_lin)*d_ratio );
             next_y.push_back( next_y_lin+(next_y_spl-next_y_lin)*d_ratio );
         }
@@ -144,8 +146,8 @@ vector<double> Trajectory::calc_gap( double d, double ego_s, double ego_d, doubl
      double gap_s_rear  =-999;
      double gap_v_rear  = 0;
      for(int i = 0; i < sensor_fusion.size(); i++){
-     	// is the other car in the same lane (6m) than the d value?
-       	if( fabs (d - sensor_fusion[i][6]) < 3 || 5 < fabs(d-ego_d) ){
+     	// is the other car in the same lane (7m) than the d value?
+       	if( fabs (d - sensor_fusion[i][6]) < 3.5 || 5.5 < fabs(d-ego_d) ){
 	    double other_vx = sensor_fusion[i][3];
        	    double other_vy = sensor_fusion[i][4];
        	    double other_v  = sqrt(other_vx*other_vx+other_vy*other_vy);
